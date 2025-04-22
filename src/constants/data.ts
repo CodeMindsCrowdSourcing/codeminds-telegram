@@ -1,4 +1,5 @@
 import { NavItem } from '@/types';
+import { IconLayoutDashboard, IconSettings, IconUsers, IconRobot } from '@tabler/icons-react';
 
 export type Product = {
   photo_url: string;
@@ -22,9 +23,9 @@ export const navItems: NavItem[] = [
     items: [] // Empty array as there are no child items for Dashboard
   },
   {
-    title: 'Product',
-    url: '/dashboard/product',
-    icon: 'product',
+    title: 'Telegram Bots',
+    url: '/dashboard/telegram-bot',
+    icon: 'robot',
     shortcut: ['p', 'p'],
     isActive: false,
     items: [] // No child items
@@ -111,3 +112,39 @@ export const recentSalesData: SaleUser[] = [
     initials: 'SD'
   }
 ];
+
+export type NavigationItem = {
+  title: string;
+  url: string;
+  icon: string;
+};
+
+export const navigation: NavigationItem[] = [
+  {
+    title: 'Dashboard',
+    url: '/dashboard/overview',
+    icon: 'dashboard',
+  },
+  {
+    title: 'Telegram Bots',
+    url: '/dashboard/telegram-bot',
+    icon: 'robot',
+  },
+  {
+    title: 'Users',
+    url: '/dashboard/users',
+    icon: 'users',
+  },
+  {
+    title: 'Settings',
+    url: '/dashboard/settings',
+    icon: 'settings',
+  },
+];
+
+export const iconMap = {
+  dashboard: IconLayoutDashboard,
+  settings: IconSettings,
+  users: IconUsers,
+  robot: IconRobot,
+};
