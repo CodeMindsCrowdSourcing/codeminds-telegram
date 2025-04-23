@@ -47,7 +47,6 @@ export default function TelegramBotsPage() {
       }));
       setBots(transformedBots);
     } catch (error) {
-      console.error('Error fetching bots:', error);
       if (error instanceof Error) {
         toast.error(error.message);
       } else {
@@ -71,11 +70,11 @@ export default function TelegramBotsPage() {
         },
         body: JSON.stringify({ isRunning: true }),
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to start bot');
       }
-      
+
       await fetchBots();
       toast.success('Bot started successfully');
     } catch (error) {
@@ -97,11 +96,11 @@ export default function TelegramBotsPage() {
         },
         body: JSON.stringify({ isRunning: false }),
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to stop bot');
       }
-      
+
       await fetchBots();
       toast.success('Bot stopped successfully');
     } catch (error) {
@@ -119,11 +118,11 @@ export default function TelegramBotsPage() {
       const response = await fetch(`/api/telegram-bot/${botId}`, {
         method: 'DELETE',
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to delete bot');
       }
-      
+
       await fetchBots();
       toast.success('Bot deleted successfully');
     } catch (error) {
@@ -178,11 +177,11 @@ export default function TelegramBotsPage() {
         },
         body: JSON.stringify(data),
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to update bot');
       }
-      
+
       await fetchBots();
       toast.success('Bot updated successfully');
     } catch (error) {
@@ -257,8 +256,8 @@ export default function TelegramBotsPage() {
       </div>
       <Separator />
       <div className='flex-1 min-h-[400px]'>
-        <BotTable 
-          data={bots} 
+        <BotTable
+          data={bots}
           onStartBot={handleStartBot}
           onStopBot={handleStopBot}
           onDeleteBot={handleDeleteBot}
@@ -267,4 +266,4 @@ export default function TelegramBotsPage() {
       </div>
     </div>
   );
-} 
+}

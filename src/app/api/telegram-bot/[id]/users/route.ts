@@ -4,9 +4,15 @@ import connectToDatabase from '@/lib/mongodb';
 import { TelegramBotModel } from '@/models/telegram-bot';
 import { TelegramUserModel } from '@/models/telegram-user';
 
+type RouteParams = {
+  params: Promise<{
+    id: string;
+  }>;
+};
+
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  context: RouteParams
 ) {
   try {
     const { userId } = await auth();
@@ -16,8 +22,10 @@ export async function GET(
 
     await connectToDatabase();
 
+    const { id } = await context.params;
+
     // Find the bot and check if it belongs to the user
-    const bot = await TelegramBotModel.findById(params.id).populate('owner');
+    const bot = await TelegramBotModel.findById(id).populate('owner');
     if (!bot) {
       return NextResponse.json({ error: 'Bot not found' }, { status: 404 });
     }
@@ -28,14 +36,13 @@ export async function GET(
     }
 
     // Get all users for this bot
-    const users = await TelegramUserModel.find({ botId: params.id });
+    const users = await TelegramUserModel.find({ botId: id });
 
     return NextResponse.json(users);
   } catch (error) {
-    console.error('Error fetching bot users:', error);
     return NextResponse.json(
       { error: 'Failed to fetch bot users' },
       { status: 500 }
     );
   }
-} 
+}

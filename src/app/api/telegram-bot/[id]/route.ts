@@ -46,7 +46,6 @@ export async function PATCH(
         // Start bot
         try {
           startBot(bot).catch(error => {
-            console.error('Error in bot loop:', error);
           });
         } catch (error) {
           return NextResponse.json({ error: 'Failed to start bot' }, { status: 500 });
@@ -70,7 +69,6 @@ export async function PATCH(
 
     return NextResponse.json(updatedBot);
   } catch (error) {
-    console.error('Error updating bot:', error);
     return NextResponse.json({ error: 'Failed to update bot' }, { status: 500 });
   }
 }
@@ -90,4 +88,4 @@ export async function DELETE(
   } catch (error) {
     return NextResponse.json({ error: 'Failed to delete bot' }, { status: 500 });
   }
-} 
+}

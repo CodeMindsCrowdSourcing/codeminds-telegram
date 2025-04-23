@@ -13,7 +13,7 @@ function formatUserInfo(update: TelegramUpdate): string {
   if (!user) return 'No user information available';
 
   const info = ['User info:'];
-  
+
   // Username
   if (user.username) {
     info.push(`@${user.username}`);
@@ -52,7 +52,7 @@ async function handleMessage(bot: TelegramBot, update: TelegramUpdate) {
     }
 
   } catch (error) {
-    console.error('Error handling message:', error);
+    throw new Error("Failed to handle message: " + error);
   }
 }
 
@@ -124,10 +124,8 @@ async function handleCallback(bot: TelegramBot, update: TelegramUpdate) {
         }),
       }
     );
-
-    console.log('User data saved:', telegramUser);
   } catch (error) {
-    console.error('Error handling callback:', error);
+    throw new Error("Error handling callback: " + error);
   }
 }
 
@@ -141,8 +139,6 @@ async function handleMyChatMember(bot: TelegramBot, update: TelegramUpdate) {
 
   // Check if bot was just added as administrator
   if (newStatus === 'administrator' && oldStatus !== 'administrator') {
-    console.log('Bot added as administrator to chat:', chatId);
-
     try {
       // Create inline keyboard with callback data
       const keyboard: InlineKeyboardMarkup = {
@@ -156,41 +152,9 @@ async function handleMyChatMember(bot: TelegramBot, update: TelegramUpdate) {
 
       // Send message with button
       await sendMessage(bot.token, chatId, bot.infoText, keyboard);
-      console.log('Welcome message sent successfully');
     } catch (error) {
-      console.error('Error sending welcome message:', error);
+      throw new Error('Error sending welcome message:');
     }
-  }
-}
-
-async function handleNewGroupMembers(bot: TelegramBot, update: TelegramUpdate) {
-  const newMembers = update.message?.new_chat_members;
-  const chatId = update.message?.chat.id;
-
-  if (!newMembers || !chatId) return;
-
-  // Check if our bot is among new members
-  const ourBot = newMembers.find(member => member.username === bot.name);
-  if (!ourBot) return;
-
-  try {
-    console.log('Bot added to group, sending welcome message');
-    
-    // Create inline keyboard with callback data
-    const keyboard: InlineKeyboardMarkup = {
-      inline_keyboard: [[
-        {
-          text: bot.buttonText,
-          callback_data: 'contact_author'
-        }
-      ]]
-    };
-
-    // Send message with button
-    await sendMessage(bot.token, chatId, bot.infoText, keyboard);
-    console.log('Welcome message sent successfully');
-  } catch (error) {
-    console.error('Error sending welcome message:', error);
   }
 }
 
@@ -201,18 +165,16 @@ export async function startBot(bot: TelegramBot): Promise<void> {
 
     // Delete webhook if exists
     await fetch(`${TELEGRAM_API_BASE}${bot.token}/deleteWebhook`);
-    
+
     // Start long polling
     let offset = 0;
     while (botRunning.get(bot.id)) {
       try {
         const updates = await getUpdates(bot.token, offset);
         if (!updates || !updates.ok) break;
-        
+
         for (const update of updates.result) {
           try {
-            console.log('Processing update:', update);
-            
             // Handle callback queries (button clicks)
             if (update.callback_query) {
               await handleCallback(bot, update);
@@ -230,23 +192,20 @@ export async function startBot(bot: TelegramBot): Promise<void> {
               await handleMessage(bot, update);
             }
           } catch (error) {
-            console.error('Error processing update:', error);
-            continue;
+            throw new Error('Error processing update:');
           }
         }
-        
+
         if (updates.result.length > 0) {
           offset = updates.result[updates.result.length - 1].update_id + 1;
         }
       } catch (error) {
-        console.error('Error getting updates:', error);
         await new Promise(resolve => setTimeout(resolve, 5000));
       }
-      
+
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
   } catch (error) {
-    console.error('Error in bot loop:', error);
     throw error;
   } finally {
     botRunning.delete(bot.id);
@@ -265,9 +224,9 @@ async function getUpdates(token: string, offset: number = 0): Promise<TelegramRe
 }
 
 async function sendMessage(
-  token: string, 
-  chatId: number, 
-  text: string, 
+  token: string,
+  chatId: number,
+  text: string,
   reply_markup?: InlineKeyboardMarkup
 ): Promise<TelegramResponse<any>> {
   const response = await fetch(
@@ -285,4 +244,4 @@ async function sendMessage(
     }
   );
   return await response.json();
-} 
+}
