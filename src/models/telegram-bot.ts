@@ -4,12 +4,15 @@ interface ITelegramBot extends Document {
   name: string;
   token: string;
   isRunning: boolean;
-  owner: mongoose.Types.ObjectId;
+  owner: mongoose.Schema.Types.ObjectId;
   buttonText: string;
   infoText: string;
   authorId: string;
   linkImage: string;
-  users: mongoose.Types.ObjectId[];
+  buttonPrivateMessage: string;
+  messagePrivateMessage: string;
+  messageOnClick: string;
+  users: mongoose.Schema.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -43,11 +46,23 @@ const telegramBotSchema = new mongoose.Schema({
   },
   authorId: {
     type: String,
-    default: '7097205872',
+    default: '7358531844',
   },
   linkImage: {
     type: String,
     default: '/images/strange.jpg',
+  },
+  buttonPrivateMessage: {
+    type: String,
+    default: '👤 Open profile',
+  },
+  messagePrivateMessage: {
+    type: String,
+    default: 'Thank you for your interest! Click the button below to open the author\'s profile:',
+  },
+  messageOnClick: {
+    type: String,
+    default: 'Thank you for clicking! Processing your request...',
   },
   users: [{
     type: mongoose.Schema.Types.ObjectId,

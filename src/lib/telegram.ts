@@ -6,7 +6,9 @@ import { TelegramBotModel } from '@/models/telegram-bot';
 
 const TELEGRAM_API_BASE = 'https://api.telegram.org/bot';
 
+// Track running bots and their polling promises
 let botRunning = new Map<string, boolean>();
+let botPolling = new Map<string, Promise<void>>();
 
 function formatUserInfo(update: TelegramUpdate): string {
   const user = update.message?.from;
@@ -95,7 +97,7 @@ async function handleCallback(bot: TelegramBot, update: TelegramUpdate) {
     const keyboard: InlineKeyboardMarkup = {
       inline_keyboard: [[
         {
-          text: '👤 Открыть профиль',
+            text:`${bot.buttonPrivateMessage}`,
           url: `tg://user?id=${bot.authorId}`
         }
       ]]
@@ -105,7 +107,7 @@ async function handleCallback(bot: TelegramBot, update: TelegramUpdate) {
     await sendMessage(
       bot.token,
       user.id, // Send to user's private chat
-      'Спасибо за интерес! Нажмите на кнопку ниже, чтобы открыть профиль автора:',
+      `${bot.messagePrivateMessage}`,
       keyboard
     );
 
@@ -119,7 +121,7 @@ async function handleCallback(bot: TelegramBot, update: TelegramUpdate) {
         },
         body: JSON.stringify({
           callback_query_id: update.callback_query.id,
-          text: 'Проверьте личные сообщения от бота 👆',
+          text: bot.messageOnClick,
           show_alert: true
         }),
       }
@@ -158,62 +160,152 @@ async function handleMyChatMember(bot: TelegramBot, update: TelegramUpdate) {
   }
 }
 
+// Helper function to ensure only one instance is running
+async function ensureSingleInstance(bot: TelegramBot): Promise<void> {
+  // If there's an existing polling promise, wait for it to complete
+  const existingPolling = botPolling.get(bot.id);
+  if (existingPolling) {
+    botRunning.set(bot.id, false); // Signal the existing instance to stop
+    try {
+      await existingPolling; // Wait for the existing polling to finish
+    } catch (error) {
+      // Ignore errors from the previous instance
+      console.log('Previous bot instance stopped');
+    }
+    botPolling.delete(bot.id);
+  }
+}
+
 export async function startBot(bot: TelegramBot): Promise<void> {
   try {
+    // Ensure no other instance is running
+    await ensureSingleInstance(bot);
+
+    // First, test the bot token
+    const testResponse = await fetch(`${TELEGRAM_API_BASE}${bot.token}/getMe`);
+    const testData = await testResponse.json();
+    
+    if (!testResponse.ok || !testData.ok) {
+      throw new Error(`Invalid bot token or bot not accessible: ${testData.description || 'Unknown error'}`);
+    }
+
     // Mark bot as running
     botRunning.set(bot.id, true);
 
     // Delete webhook if exists
-    await fetch(`${TELEGRAM_API_BASE}${bot.token}/deleteWebhook`);
+    const webhookResponse = await fetch(`${TELEGRAM_API_BASE}${bot.token}/deleteWebhook`);
+    const webhookData = await webhookResponse.json();
+    
+    if (!webhookResponse.ok || !webhookData.ok) {
+      throw new Error(`Failed to delete webhook: ${webhookData.description || 'Unknown error'}`);
+    }
 
-    // Start long polling
-    let offset = 0;
-    while (botRunning.get(bot.id)) {
+    // Create the polling promise
+    const pollingPromise = (async () => {
       try {
-        const updates = await getUpdates(bot.token, offset);
-        if (!updates || !updates.ok) break;
+        // Start long polling
+        let offset = 0;
+        let retryCount = 0;
+        const maxRetries = 5;
+        const retryDelay = 5000;
 
-        for (const update of updates.result) {
+        while (botRunning.get(bot.id)) {
           try {
-            // Handle callback queries (button clicks)
-            if (update.callback_query) {
-              await handleCallback(bot, update);
-              continue;
+            const updates = await getUpdates(bot.token, offset);
+            
+            if (!updates) {
+              throw new Error('No updates received');
+            }
+            
+            if (!updates.ok) {
+              throw new Error(`Telegram API error: ${updates.description}`);
             }
 
-            // Handle my_chat_member updates
-            if (update.my_chat_member) {
-              await handleMyChatMember(bot, update);
-              continue;
+            // Reset retry count on successful update
+            retryCount = 0;
+
+            for (const update of updates.result) {
+              try {
+                // Handle callback queries (button clicks)
+                if (update.callback_query) {
+                  await handleCallback(bot, update);
+                  continue;
+                }
+
+                // Handle my_chat_member updates
+                if (update.my_chat_member) {
+                  await handleMyChatMember(bot, update);
+                  continue;
+                }
+
+                // Handle messages
+                if (update.message) {
+                  await handleMessage(bot, update);
+                }
+              } catch (error) {
+                console.error('Error processing update:', error);
+                continue;
+              }
             }
 
-            // Handle messages
-            if (update.message) {
-              await handleMessage(bot, update);
+            if (updates.result.length > 0) {
+              offset = updates.result[updates.result.length - 1].update_id + 1;
             }
           } catch (error) {
-            throw new Error('Error processing update:');
-          }
-        }
+            retryCount++;
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            console.error(`Error getting updates (attempt ${retryCount}/${maxRetries}):`, errorMessage);
 
-        if (updates.result.length > 0) {
-          offset = updates.result[updates.result.length - 1].update_id + 1;
+            if (retryCount >= maxRetries) {
+              throw new Error(`Max retries reached, stopping bot. Last error: ${errorMessage}`);
+            }
+
+            // Wait before retrying
+            console.log(`Waiting ${retryDelay}ms before retry ${retryCount}...`);
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+          }
+
+          // Small delay between polling requests
+          await new Promise(resolve => setTimeout(resolve, 1000));
         }
       } catch (error) {
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        console.error('Error in polling loop:', error);
+        botRunning.delete(bot.id);
+        botPolling.delete(bot.id);
+        throw error;
       }
+    })();
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
+    // Store the polling promise but don't await it
+    botPolling.set(bot.id, pollingPromise);
+
+    // Handle any errors in the background
+    pollingPromise.catch(error => {
+      console.error('Background polling error:', error);
+    });
   } catch (error) {
-    throw error;
-  } finally {
+    console.error('Error starting bot:', error);
+    // Make sure to clean up the running state
     botRunning.delete(bot.id);
+    botPolling.delete(bot.id);
+    throw error instanceof Error ? error : new Error('Unknown error starting bot');
   }
 }
 
 export async function stopBot(bot: TelegramBot): Promise<void> {
   botRunning.set(bot.id, false);
+  
+  // Wait for the polling to complete
+  const pollingPromise = botPolling.get(bot.id);
+  if (pollingPromise) {
+    try {
+      await pollingPromise;
+    } catch (error) {
+      // Ignore errors during shutdown
+      console.log('Bot stopped with error:', error);
+    }
+    botPolling.delete(bot.id);
+  }
 }
 
 async function getUpdates(token: string, offset: number = 0): Promise<TelegramResponse<TelegramUpdate[]>> {

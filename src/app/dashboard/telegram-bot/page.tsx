@@ -23,8 +23,14 @@ export default function TelegramBotsPage() {
   const [bots, setBots] = useState<TelegramBot[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAddingBot, setIsAddingBot] = useState(false);
   const [newBotName, setNewBotName] = useState('');
   const [newBotToken, setNewBotToken] = useState('');
+  const [newBotButtonText, setNewBotButtonText] = useState('');
+  const [newBotInfoText, setNewBotInfoText] = useState('');
+  const [newBotButtonPrivateMessage, setNewBotButtonPrivateMessage] = useState('');
+  const [newBotMessagePrivateMessage, setNewBotMessagePrivateMessage] = useState('');
+  const [newBotMessageOnClick, setNewBotMessageOnClick] = useState('');
 
   const fetchBots = async () => {
     try {
@@ -42,6 +48,9 @@ export default function TelegramBotsPage() {
         infoText: bot.infoText,
         authorId: bot.authorId,
         linkImage: bot.linkImage,
+        buttonPrivateMessage: bot.buttonPrivateMessage,
+        messagePrivateMessage: bot.messagePrivateMessage,
+        messageOnClick: bot.messageOnClick,
         createdAt: new Date(bot.createdAt),
         updatedAt: new Date(bot.updatedAt)
       }));
@@ -63,6 +72,7 @@ export default function TelegramBotsPage() {
 
   const handleStartBot = async (botId: string) => {
     try {
+      setIsLoading(true);
       const response = await fetch(`/api/telegram-bot/${botId}`, {
         method: 'PATCH',
         headers: {
@@ -72,10 +82,26 @@ export default function TelegramBotsPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to start bot');
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.message || 'Failed to start bot');
       }
 
-      await fetchBots();
+      // Get the updated bot data
+      const updatedBot = await response.json();
+      
+      // Update the bot in the local state
+      setBots(prevBots => 
+        prevBots.map(bot => 
+          bot.id === botId 
+            ? {
+                ...bot,
+                isRunning: updatedBot.isRunning,
+                updatedAt: new Date(updatedBot.updatedAt)
+              }
+            : bot
+        )
+      );
+
       toast.success('Bot started successfully');
     } catch (error) {
       if (error instanceof Error) {
@@ -83,12 +109,16 @@ export default function TelegramBotsPage() {
       } else {
         toast.error('Failed to start bot');
       }
-      throw error;
+      // Refresh bots list to ensure correct status is shown
+      await fetchBots();
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleStopBot = async (botId: string) => {
     try {
+      setIsLoading(true);
       const response = await fetch(`/api/telegram-bot/${botId}`, {
         method: 'PATCH',
         headers: {
@@ -98,10 +128,26 @@ export default function TelegramBotsPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to stop bot');
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.message || 'Failed to stop bot');
       }
 
-      await fetchBots();
+      // Get the updated bot data
+      const updatedBot = await response.json();
+      
+      // Update the bot in the local state
+      setBots(prevBots => 
+        prevBots.map(bot => 
+          bot.id === botId 
+            ? {
+                ...bot,
+                isRunning: updatedBot.isRunning,
+                updatedAt: new Date(updatedBot.updatedAt)
+              }
+            : bot
+        )
+      );
+
       toast.success('Bot stopped successfully');
     } catch (error) {
       if (error instanceof Error) {
@@ -109,12 +155,29 @@ export default function TelegramBotsPage() {
       } else {
         toast.error('Failed to stop bot');
       }
-      throw error;
+      // Refresh bots list to ensure correct status is shown
+      await fetchBots();
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleDeleteBot = async (botId: string) => {
     try {
+      // Find the bot to check if it's running
+      const bot = bots.find(b => b.id === botId);
+      if (!bot) {
+        throw new Error('Bot not found');
+      }
+
+      // If bot is running, stop it first
+      if (bot.isRunning) {
+        await fetch(`/api/telegram-bot/${botId}/stop`, {
+          method: 'POST',
+        });
+      }
+
+      // Then delete the bot
       const response = await fetch(`/api/telegram-bot/${botId}`, {
         method: 'DELETE',
       });
@@ -131,13 +194,15 @@ export default function TelegramBotsPage() {
       } else {
         toast.error('Failed to delete bot');
       }
-      throw error;
     }
   };
 
   const handleAddBot = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isAddingBot) return;
+    
     try {
+      setIsAddingBot(true);
       const response = await fetch('/api/telegram-bot', {
         method: 'POST',
         headers: {
@@ -147,6 +212,13 @@ export default function TelegramBotsPage() {
           name: newBotName,
           token: newBotToken,
           isRunning: false,
+          buttonText: newBotButtonText || 'להזמנות לחצו כאן',
+          infoText: newBotInfoText || 'להזמנות לחצו כאן',
+          authorId: '',
+          linkImage: '/images/strange.jpg',
+          buttonPrivateMessage: newBotButtonPrivateMessage || '👤 Open profile',
+          messagePrivateMessage: newBotMessagePrivateMessage || 'Thank you for your interest! Click the button below to open the author\'s profile:',
+          messageOnClick: newBotMessageOnClick || 'Thank you for clicking! Processing your request...',
         }),
       });
 
@@ -158,6 +230,11 @@ export default function TelegramBotsPage() {
       setIsDialogOpen(false);
       setNewBotName('');
       setNewBotToken('');
+      setNewBotButtonText('');
+      setNewBotInfoText('');
+      setNewBotButtonPrivateMessage('');
+      setNewBotMessagePrivateMessage('');
+      setNewBotMessageOnClick('');
       await fetchBots();
     } catch (error) {
       if (error instanceof Error) {
@@ -165,6 +242,8 @@ export default function TelegramBotsPage() {
       } else {
         toast.error('Failed to add bot');
       }
+    } finally {
+      setIsAddingBot(false);
     }
   };
 
@@ -182,7 +261,16 @@ export default function TelegramBotsPage() {
         throw new Error('Failed to update bot');
       }
 
-      await fetchBots();
+      const updatedBot = await response.json();
+      setBots(prevBots => prevBots.map(bot => 
+        bot.id === botId ? {
+          ...bot,
+          ...updatedBot,
+          createdAt: new Date(updatedBot.createdAt),
+          updatedAt: new Date(updatedBot.updatedAt)
+        } : bot
+      ));
+
       toast.success('Bot updated successfully');
     } catch (error) {
       if (error instanceof Error) {
@@ -190,7 +278,6 @@ export default function TelegramBotsPage() {
       } else {
         toast.error('Failed to update bot');
       }
-      throw error;
     }
   };
 
@@ -235,6 +322,7 @@ export default function TelegramBotsPage() {
                   onChange={(e) => setNewBotName(e.target.value)}
                   placeholder='Enter bot name'
                   required
+                  disabled={isAddingBot}
                 />
               </div>
               <div className='space-y-2'>
@@ -245,10 +333,68 @@ export default function TelegramBotsPage() {
                   onChange={(e) => setNewBotToken(e.target.value)}
                   placeholder='Enter bot token'
                   required
+                  disabled={isAddingBot}
                 />
               </div>
-              <Button type='submit' className='w-full'>
-                Add Bot
+              <div className='space-y-2'>
+                <Label htmlFor='buttonText'>Button Text</Label>
+                <Input
+                  id='buttonText'
+                  value={newBotButtonText}
+                  onChange={(e) => setNewBotButtonText(e.target.value)}
+                  placeholder='Enter button text'
+                  disabled={isAddingBot}
+                />
+              </div>
+              <div className='space-y-2'>
+                <Label htmlFor='infoText'>Info Text</Label>
+                <Input
+                  id='infoText'
+                  value={newBotInfoText}
+                  onChange={(e) => setNewBotInfoText(e.target.value)}
+                  placeholder='Enter info text'
+                  disabled={isAddingBot}
+                />
+              </div>
+              <div className='space-y-2'>
+                <Label htmlFor='buttonPrivateMessage'>Private Message Button Text</Label>
+                <Input
+                  id='buttonPrivateMessage'
+                  value={newBotButtonPrivateMessage}
+                  onChange={(e) => setNewBotButtonPrivateMessage(e.target.value)}
+                  placeholder='Enter private message button text'
+                  disabled={isAddingBot}
+                />
+              </div>
+              <div className='space-y-2'>
+                <Label htmlFor='messagePrivateMessage'>Private Message Text</Label>
+                <Input
+                  id='messagePrivateMessage'
+                  value={newBotMessagePrivateMessage}
+                  onChange={(e) => setNewBotMessagePrivateMessage(e.target.value)}
+                  placeholder='Enter private message text'
+                  disabled={isAddingBot}
+                />
+              </div>
+              <div className='space-y-2'>
+                <Label htmlFor='messageOnClick'>Click Message</Label>
+                <Input
+                  id='messageOnClick'
+                  value={newBotMessageOnClick}
+                  onChange={(e) => setNewBotMessageOnClick(e.target.value)}
+                  placeholder='Enter message to show on click'
+                  disabled={isAddingBot}
+                />
+              </div>
+              <Button type='submit' className='w-full' disabled={isAddingBot}>
+                {isAddingBot ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Adding Bot...
+                  </>
+                ) : (
+                  'Add Bot'
+                )}
               </Button>
             </form>
           </DialogContent>

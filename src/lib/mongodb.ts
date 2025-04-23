@@ -10,7 +10,11 @@ declare global {
 const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable inside .env');
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Please define the MONGODB_URI environment variable in your Vercel project settings');
+  } else {
+    throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
+  }
 }
 
 let cached = global.mongoose;

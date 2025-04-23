@@ -9,4 +9,7 @@ export interface TelegramBot {
   linkImage: string;
   createdAt: Date;
   updatedAt: Date;
+  buttonPrivateMessage: string;
+  messagePrivateMessage: string;
+  messageOnClick: string;
 } 

@@ -20,6 +20,16 @@ export async function GET(
     if (!bot) {
       return NextResponse.json({ error: 'Bot not found' }, { status: 404 });
     }
+
+    // If bot should be running but isn't, restart it
+    if (bot.isRunning) {
+      try {
+        await startBot(bot);
+      } catch (error) {
+        console.error('Error restarting bot:', error);
+      }
+    }
+
     return NextResponse.json(bot);
   } catch (error) {
     return NextResponse.json({ error: 'Failed to fetch bot' }, { status: 500 });
@@ -41,12 +51,11 @@ export async function PATCH(
     }
 
     // Handle bot start/stop
-    if (typeof body.isRunning === 'boolean') {
+    if (typeof body.isRunning === 'boolean' && body.isRunning !== bot.isRunning) {
       if (body.isRunning) {
         // Start bot
         try {
-          startBot(bot).catch(error => {
-          });
+          await startBot(bot);
         } catch (error) {
           return NextResponse.json({ error: 'Failed to start bot' }, { status: 500 });
         }
@@ -60,15 +69,29 @@ export async function PATCH(
       }
     }
 
-    // Update bot in database
+    // Update bot in database with all fields
     const updatedBot = await TelegramBotModel.findByIdAndUpdate(
       id,
-      body,
+      {
+        $set: {
+          ...(body.name && { name: body.name }),
+          ...(body.token && { token: body.token }),
+          ...(typeof body.isRunning === 'boolean' && { isRunning: body.isRunning }),
+          ...(body.buttonText && { buttonText: body.buttonText }),
+          ...(body.infoText && { infoText: body.infoText }),
+          ...(body.authorId && { authorId: body.authorId }),
+          ...(body.linkImage && { linkImage: body.linkImage }),
+          ...(body.buttonPrivateMessage && { buttonPrivateMessage: body.buttonPrivateMessage }),
+          ...(body.messagePrivateMessage && { messagePrivateMessage: body.messagePrivateMessage }),
+          ...(body.messageOnClick && { messageOnClick: body.messageOnClick }),
+        }
+      },
       { new: true }
     );
 
     return NextResponse.json(updatedBot);
   } catch (error) {
+    console.error('Error updating bot:', error);
     return NextResponse.json({ error: 'Failed to update bot' }, { status: 500 });
   }
 }

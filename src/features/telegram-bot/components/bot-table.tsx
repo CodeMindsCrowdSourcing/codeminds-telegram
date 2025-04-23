@@ -2,7 +2,7 @@
 
 import { ColumnDef, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { format } from 'date-fns';
-import { MoreHorizontal, PlayCircle, PowerOff, Trash2, Settings, Users } from 'lucide-react';
+import { MoreHorizontal, PlayCircle, PowerOff, Trash2, Settings, Users, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -47,65 +47,90 @@ interface ActionsCellProps {
 function ActionsCell({ bot, onStartBot, onStopBot, onDeleteBot, onUpdateBot }: ActionsCellProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editData, setEditData] = useState({
-    buttonText: bot.buttonText,
-    infoText: bot.infoText,
-    authorId: bot.authorId,
-    linkImage: bot.linkImage,
+    buttonText: '',
+    infoText: '',
+    authorId: '',
+    linkImage: '',
+    buttonPrivateMessage: '',
+    messagePrivateMessage: '',
+    messageOnClick: '',
   });
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    setEditData({
-      buttonText: bot.buttonText,
-      infoText: bot.infoText,
-      authorId: bot.authorId,
-      linkImage: bot.linkImage,
-    });
+    if (isEditDialogOpen && bot) {
+      setEditData({
+        buttonText: bot.buttonText,
+        infoText: bot.infoText,
+        authorId: bot.authorId,
+        linkImage: bot.linkImage,
+        buttonPrivateMessage: bot.buttonPrivateMessage || '',
+        messagePrivateMessage: bot.messagePrivateMessage || '',
+        messageOnClick: bot.messageOnClick || '',
+      });
+    }
   }, [isEditDialogOpen, bot]);
 
   const handleAction = async (
     action: () => Promise<void>,
-    successMessage: string
+    successMessage: string,
+    type: 'start' | 'stop' | 'delete' = 'start'
   ) => {
+    if (isLoading) return; // Prevent duplicate requests
+    
     try {
       setIsLoading(true);
+      
+      // For delete action, close the dropdown menu
+      if (type === 'delete') {
+        const dropdownTrigger = document.querySelector('[aria-expanded="true"]') as HTMLElement;
+        if (dropdownTrigger) {
+          dropdownTrigger.click();
+        }
+      }
+      
       await action();
-      toast.success(successMessage);
+      // Success message is now handled by the parent component for all actions
+      // This ensures we only show success after confirming the action worked
     } catch (error) {
       if (error instanceof Error) {
         toast.error(error.message);
       } else {
-        toast.error('An error occurred');
+        toast.error(`Failed to ${type} bot`);
       }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleUpdate = async () => {
-    if (!onUpdateBot || !onStopBot || !onStartBot) return;
+  const handleUpdate = async (bot: TelegramBot) => {
+    if (!onUpdateBot) return;
+    
     try {
-      const wasRunning = bot.isRunning;
+      setIsLoading(true);
       
-      if (wasRunning) {
-        await onStopBot(bot.id);
-      }
+      // Update bot parameters
+      await onUpdateBot(bot.id, {
+        buttonText: editData.buttonText,
+        infoText: editData.infoText,
+        authorId: editData.authorId,
+        linkImage: editData.linkImage,
+        buttonPrivateMessage: editData.buttonPrivateMessage,
+        messagePrivateMessage: editData.messagePrivateMessage,
+        messageOnClick: editData.messageOnClick,
+      });
 
-      await onUpdateBot(bot.id, editData);
-      
-      if (wasRunning) {
-        await onStartBot(bot.id);
-      }
-
-      toast.success('Bot parameters updated successfully');
       setIsEditDialogOpen(false);
+      // Success message is handled by the parent component
     } catch (error) {
       if (error instanceof Error) {
         toast.error(error.message);
       } else {
         toast.error('Failed to update bot parameters');
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -127,6 +152,7 @@ function ActionsCell({ bot, onStartBot, onStopBot, onDeleteBot, onUpdateBot }: A
                 value={editData.buttonText}
                 onChange={(e) => setEditData({ ...editData, buttonText: e.target.value })}
                 placeholder="Enter button text"
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
@@ -136,6 +162,7 @@ function ActionsCell({ bot, onStartBot, onStopBot, onDeleteBot, onUpdateBot }: A
                 value={editData.infoText}
                 onChange={(e) => setEditData({ ...editData, infoText: e.target.value })}
                 placeholder="Enter info text"
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
@@ -145,6 +172,7 @@ function ActionsCell({ bot, onStartBot, onStopBot, onDeleteBot, onUpdateBot }: A
                 value={editData.authorId}
                 onChange={(e) => setEditData({ ...editData, authorId: e.target.value })}
                 placeholder="Enter author ID"
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
@@ -154,10 +182,48 @@ function ActionsCell({ bot, onStartBot, onStopBot, onDeleteBot, onUpdateBot }: A
                 value={editData.linkImage}
                 onChange={(e) => setEditData({ ...editData, linkImage: e.target.value })}
                 placeholder="Enter image URL"
+                disabled={isLoading}
               />
             </div>
-            <Button onClick={handleUpdate} className="w-full">
-              Save Changes
+            <div className="space-y-2">
+              <Label htmlFor="buttonPrivateMessage">Private Message Button Text</Label>
+              <Input
+                id="buttonPrivateMessage"
+                value={editData.buttonPrivateMessage}
+                onChange={(e) => setEditData({ ...editData, buttonPrivateMessage: e.target.value })}
+                placeholder="Enter private message button text"
+                disabled={isLoading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="messagePrivateMessage">Private Message Text</Label>
+              <Input
+                id="messagePrivateMessage"
+                value={editData.messagePrivateMessage}
+                onChange={(e) => setEditData({ ...editData, messagePrivateMessage: e.target.value })}
+                placeholder="Enter private message text"
+                disabled={isLoading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="messageOnClick">Click Message</Label>
+              <Input
+                id="messageOnClick"
+                value={editData.messageOnClick}
+                onChange={(e) => setEditData({ ...editData, messageOnClick: e.target.value })}
+                placeholder="Enter message to show on click"
+                disabled={isLoading}
+              />
+            </div>
+            <Button onClick={() => handleUpdate(bot)} className="w-full" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving Changes...
+                </>
+              ) : (
+                'Save Changes'
+              )}
             </Button>
           </div>
         </DialogContent>
@@ -219,7 +285,8 @@ function ActionsCell({ bot, onStartBot, onStopBot, onDeleteBot, onUpdateBot }: A
             onClick={() =>
               handleAction(
                 () => onDeleteBot?.(bot.id) ?? Promise.resolve(),
-                'Bot deleted successfully'
+                'Bot deleted successfully',
+                'delete'
               )
             }
             disabled={isLoading}

@@ -37,6 +37,7 @@ export async function GET() {
     const bots = await TelegramBotModel.find({ owner: user._id });
     return NextResponse.json(bots);
   } catch (error) {
+    console.error('Error fetching bots:', error);
     return NextResponse.json({ error: 'Failed to fetch bots' }, { status: 500 });
   }
 }
@@ -72,9 +73,20 @@ export async function POST(request: Request) {
       });
     }
 
+    // Create bot with all fields
     const bot = new TelegramBotModel({
-      ...data,
+      name: data.name,
+      token: data.token,
+      isRunning: data.isRunning,
       owner: user._id,
+      buttonText: data.buttonText,
+      infoText: data.infoText,
+      authorId: data.authorId,
+      linkImage: data.linkImage,
+      buttonPrivateMessage: data.buttonPrivateMessage,
+      messagePrivateMessage: data.messagePrivateMessage,
+      messageOnClick: data.messageOnClick,
+      users: [],
     });
 
     await bot.save();
@@ -85,6 +97,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(bot);
   } catch (error) {
+    console.error('Error creating bot:', error);
     return NextResponse.json({ error: 'Failed to create bot' }, { status: 500 });
   }
 }
