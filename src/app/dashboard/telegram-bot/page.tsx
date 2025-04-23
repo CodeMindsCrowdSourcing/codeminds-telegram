@@ -96,7 +96,7 @@ export default function TelegramBotsPage() {
             ? {
                 ...bot,
                 isRunning: updatedBot.isRunning,
-                updatedAt: new Date(updatedBot.updatedAt)
+                updatedAt: updatedBot.updatedAt // Remove Date constructor to match type
               }
             : bot
         )
@@ -134,7 +134,6 @@ export default function TelegramBotsPage() {
 
       // Get the updated bot data
       const updatedBot = await response.json();
-      
       // Update the bot in the local state
       setBots(prevBots => 
         prevBots.map(bot => 
@@ -142,7 +141,7 @@ export default function TelegramBotsPage() {
             ? {
                 ...bot,
                 isRunning: updatedBot.isRunning,
-                updatedAt: new Date(updatedBot.updatedAt)
+                updatedAt: updatedBot.updatedAt // Remove Date constructor
               }
             : bot
         )

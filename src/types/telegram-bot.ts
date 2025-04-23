@@ -1,15 +1,17 @@
 export interface TelegramBot {
+  _id: string;
   id: string;
   name: string;
   token: string;
+  owner: string;
   isRunning: boolean;
   buttonText: string;
   infoText: string;
   authorId: string;
   linkImage: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
   buttonPrivateMessage: string;
   messagePrivateMessage: string;
-  messageOnClick: string;
+  messageOnClick?: string;
 } 
