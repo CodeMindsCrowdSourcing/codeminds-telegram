@@ -1,5 +1,9 @@
 import type { TelegramBot } from '@/types/telegram-bot';
-import type { TelegramResponse, TelegramUpdate, InlineKeyboardMarkup } from '@/types/telegram-api';
+import type {
+  TelegramResponse,
+  TelegramUpdate,
+  InlineKeyboardMarkup
+} from '@/types/telegram-api';
 import { TelegramUserModel } from '@/models/telegram-user';
 import connectToDatabase from '@/lib/mongodb';
 import { TelegramBotModel } from '@/models/telegram-bot';
@@ -9,6 +13,25 @@ const TELEGRAM_API_BASE = 'https://api.telegram.org/bot';
 // Track running bots and their polling promises
 let botRunning = new Map<string, boolean>();
 let botPolling = new Map<string, Promise<void>>();
+
+// Simple logger
+const logger = {
+  info: (message: string, ...args: any[]) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.info(`[Telegram Bot] ${message}`, ...args);
+    }
+  },
+  error: (message: string, ...args: any[]) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.error(`[Telegram Bot] ${message}`, ...args);
+    }
+  },
+  warn: (message: string, ...args: any[]) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn(`[Telegram Bot] ${message}`, ...args);
+    }
+  }
+};
 
 function formatUserInfo(update: TelegramUpdate): string {
   const user = update.message?.from;
@@ -38,7 +61,6 @@ function formatUserInfo(update: TelegramUpdate): string {
   return info.join('\n');
 }
 
-
 async function handleMessage(bot: TelegramBot, update: TelegramUpdate) {
   if (!update.message?.chat.id) return;
 
@@ -52,9 +74,8 @@ async function handleMessage(bot: TelegramBot, update: TelegramUpdate) {
       await sendMessage(bot.token, chatId, userInfo);
       return;
     }
-
   } catch (error) {
-    throw new Error("Failed to handle message: " + error);
+    throw new Error('Failed to handle message: ' + error);
   }
 }
 
@@ -80,27 +101,26 @@ async function handleCallback(bot: TelegramBot, update: TelegramUpdate) {
         lastName: user.last_name,
         languageCode: user.language_code,
         isPremium: user.is_premium,
-        clickedAt: new Date(),
+        clickedAt: new Date()
       },
       { upsert: true, new: true }
     );
 
     // Update bot's users array if this is a new user
-    await TelegramBotModel.findByIdAndUpdate(
-      bot.id,
-      {
-        $addToSet: { users: telegramUser._id }
-      }
-    );
+    await TelegramBotModel.findByIdAndUpdate(bot.id, {
+      $addToSet: { users: telegramUser._id }
+    });
 
     // Send personal message to user with author link button
     const keyboard: InlineKeyboardMarkup = {
-      inline_keyboard: [[
-        {
-            text:`${bot.buttonPrivateMessage}`,
-          url: `tg://user?id=${bot.authorId}`
-        }
-      ]]
+      inline_keyboard: [
+        [
+          {
+            text: `${bot.buttonPrivateMessage}`,
+            url: `tg://user?id=${bot.authorId}`
+          }
+        ]
+      ]
     };
 
     // Send message with button to the user who clicked
@@ -112,22 +132,19 @@ async function handleCallback(bot: TelegramBot, update: TelegramUpdate) {
     );
 
     // Answer callback query to remove loading state
-    await fetch(
-      `${TELEGRAM_API_BASE}${bot.token}/answerCallbackQuery`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          callback_query_id: update.callback_query.id,
-          text: bot.messageOnClick,
-          show_alert: true
-        }),
-      }
-    );
+    await fetch(`${TELEGRAM_API_BASE}${bot.token}/answerCallbackQuery`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        callback_query_id: update.callback_query.id,
+        text: bot.messageOnClick,
+        show_alert: true
+      })
+    });
   } catch (error) {
-    throw new Error("Error handling callback: " + error);
+    throw new Error('Error handling callback: ' + error);
   }
 }
 
@@ -144,12 +161,14 @@ async function handleMyChatMember(bot: TelegramBot, update: TelegramUpdate) {
     try {
       // Create inline keyboard with callback data
       const keyboard: InlineKeyboardMarkup = {
-        inline_keyboard: [[
-          {
-            text: bot.buttonText,
-            callback_data: 'contact_author'
-          }
-        ]]
+        inline_keyboard: [
+          [
+            {
+              text: bot.buttonText,
+              callback_data: 'contact_author'
+            }
+          ]
+        ]
       };
 
       // Send message with button
@@ -170,7 +189,7 @@ async function ensureSingleInstance(bot: TelegramBot): Promise<void> {
       await existingPolling; // Wait for the existing polling to finish
     } catch (error) {
       // Ignore errors from the previous instance
-      console.log('Previous bot instance stopped');
+      logger.info('Previous bot instance stopped');
     }
     botPolling.delete(bot.id);
   }
@@ -184,20 +203,26 @@ export async function startBot(bot: TelegramBot): Promise<void> {
     // First, test the bot token
     const testResponse = await fetch(`${TELEGRAM_API_BASE}${bot.token}/getMe`);
     const testData = await testResponse.json();
-    
+
     if (!testResponse.ok || !testData.ok) {
-      throw new Error(`Invalid bot token or bot not accessible: ${testData.description || 'Unknown error'}`);
+      throw new Error(
+        `Invalid bot token or bot not accessible: ${testData.description || 'Unknown error'}`
+      );
     }
 
     // Mark bot as running
     botRunning.set(bot.id, true);
 
     // Delete webhook if exists
-    const webhookResponse = await fetch(`${TELEGRAM_API_BASE}${bot.token}/deleteWebhook`);
+    const webhookResponse = await fetch(
+      `${TELEGRAM_API_BASE}${bot.token}/deleteWebhook`
+    );
     const webhookData = await webhookResponse.json();
-    
+
     if (!webhookResponse.ok || !webhookData.ok) {
-      throw new Error(`Failed to delete webhook: ${webhookData.description || 'Unknown error'}`);
+      throw new Error(
+        `Failed to delete webhook: ${webhookData.description || 'Unknown error'}`
+      );
     }
 
     // Create the polling promise
@@ -212,11 +237,11 @@ export async function startBot(bot: TelegramBot): Promise<void> {
         while (botRunning.get(bot.id)) {
           try {
             const updates = await getUpdates(bot.token, offset);
-            
+
             if (!updates) {
               throw new Error('No updates received');
             }
-            
+
             if (!updates.ok) {
               throw new Error(`Telegram API error: ${updates.description}`);
             }
@@ -243,7 +268,7 @@ export async function startBot(bot: TelegramBot): Promise<void> {
                   await handleMessage(bot, update);
                 }
               } catch (error) {
-                console.error('Error processing update:', error);
+                logger.error('Error processing update:', error);
                 continue;
               }
             }
@@ -253,23 +278,31 @@ export async function startBot(bot: TelegramBot): Promise<void> {
             }
           } catch (error) {
             retryCount++;
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            console.error(`Error getting updates (attempt ${retryCount}/${maxRetries}):`, errorMessage);
+            const errorMessage =
+              error instanceof Error ? error.message : 'Unknown error';
+            logger.error(
+              `Error getting updates (attempt ${retryCount}/${maxRetries}):`,
+              errorMessage
+            );
 
             if (retryCount >= maxRetries) {
-              throw new Error(`Max retries reached, stopping bot. Last error: ${errorMessage}`);
+              throw new Error(
+                `Max retries reached, stopping bot. Last error: ${errorMessage}`
+              );
             }
 
             // Wait before retrying
-            console.log(`Waiting ${retryDelay}ms before retry ${retryCount}...`);
-            await new Promise(resolve => setTimeout(resolve, retryDelay));
+            logger.info(
+              `Waiting ${retryDelay}ms before retry ${retryCount}...`
+            );
+            await new Promise((resolve) => setTimeout(resolve, retryDelay));
           }
 
           // Small delay between polling requests
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise((resolve) => setTimeout(resolve, 1000));
         }
       } catch (error) {
-        console.error('Error in polling loop:', error);
+        logger.error('Error in polling loop:', error);
         botRunning.delete(bot.id);
         botPolling.delete(bot.id);
         throw error;
@@ -280,21 +313,23 @@ export async function startBot(bot: TelegramBot): Promise<void> {
     botPolling.set(bot.id, pollingPromise);
 
     // Handle any errors in the background
-    pollingPromise.catch(error => {
-      console.error('Background polling error:', error);
+    pollingPromise.catch((error) => {
+      logger.error('Background polling error:', error);
     });
   } catch (error) {
-    console.error('Error starting bot:', error);
+    logger.error('Error starting bot:', error);
     // Make sure to clean up the running state
     botRunning.delete(bot.id);
     botPolling.delete(bot.id);
-    throw error instanceof Error ? error : new Error('Unknown error starting bot');
+    throw error instanceof Error
+      ? error
+      : new Error('Unknown error starting bot');
   }
 }
 
 export async function stopBot(bot: TelegramBot): Promise<void> {
   botRunning.set(bot.id, false);
-  
+
   // Wait for the polling to complete
   const pollingPromise = botPolling.get(bot.id);
   if (pollingPromise) {
@@ -302,13 +337,16 @@ export async function stopBot(bot: TelegramBot): Promise<void> {
       await pollingPromise;
     } catch (error) {
       // Ignore errors during shutdown
-      console.log('Bot stopped with error:', error);
+      logger.warn('Bot stopped with error:', error);
     }
     botPolling.delete(bot.id);
   }
 }
 
-async function getUpdates(token: string, offset: number = 0): Promise<TelegramResponse<TelegramUpdate[]>> {
+async function getUpdates(
+  token: string,
+  offset: number = 0
+): Promise<TelegramResponse<TelegramUpdate[]>> {
   const response = await fetch(
     `${TELEGRAM_API_BASE}${token}/getUpdates?offset=${offset}&timeout=30`
   );
@@ -321,19 +359,16 @@ async function sendMessage(
   text: string,
   reply_markup?: InlineKeyboardMarkup
 ): Promise<TelegramResponse<any>> {
-  const response = await fetch(
-    `${TELEGRAM_API_BASE}${token}/sendMessage`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: text,
-        reply_markup,
-      }),
-    }
-  );
+  const response = await fetch(`${TELEGRAM_API_BASE}${token}/sendMessage`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text: text,
+      reply_markup
+    })
+  });
   return await response.json();
 }

@@ -9,10 +9,7 @@ type RouteParams = {
   }>;
 };
 
-export async function GET(
-  _request: NextRequest,
-  context: RouteParams
-) {
+export async function GET(_request: NextRequest, context: RouteParams) {
   try {
     const { id } = await context.params;
     await connectDB();
@@ -25,9 +22,7 @@ export async function GET(
     if (bot.isRunning) {
       try {
         await startBot(bot);
-      } catch (error) {
-        console.error('Error restarting bot:', error);
-      }
+      } catch (error) {}
     }
 
     return NextResponse.json(bot);
@@ -36,10 +31,7 @@ export async function GET(
   }
 }
 
-export async function PATCH(
-  request: NextRequest,
-  context: RouteParams
-) {
+export async function PATCH(request: NextRequest, context: RouteParams) {
   try {
     const { id } = await context.params;
     const body = await request.json();
@@ -51,20 +43,29 @@ export async function PATCH(
     }
 
     // Handle bot start/stop
-    if (typeof body.isRunning === 'boolean' && body.isRunning !== bot.isRunning) {
+    if (
+      typeof body.isRunning === 'boolean' &&
+      body.isRunning !== bot.isRunning
+    ) {
       if (body.isRunning) {
         // Start bot
         try {
           await startBot(bot);
         } catch (error) {
-          return NextResponse.json({ error: 'Failed to start bot' }, { status: 500 });
+          return NextResponse.json(
+            { error: 'Failed to start bot' },
+            { status: 500 }
+          );
         }
       } else {
         // Stop bot
         try {
           await stopBot(bot);
         } catch (error) {
-          return NextResponse.json({ error: 'Failed to stop bot' }, { status: 500 });
+          return NextResponse.json(
+            { error: 'Failed to stop bot' },
+            { status: 500 }
+          );
         }
       }
     }
@@ -76,14 +77,20 @@ export async function PATCH(
         $set: {
           ...(body.name && { name: body.name }),
           ...(body.token && { token: body.token }),
-          ...(typeof body.isRunning === 'boolean' && { isRunning: body.isRunning }),
+          ...(typeof body.isRunning === 'boolean' && {
+            isRunning: body.isRunning
+          }),
           ...(body.buttonText && { buttonText: body.buttonText }),
           ...(body.infoText && { infoText: body.infoText }),
           ...(body.authorId && { authorId: body.authorId }),
           ...(body.linkImage && { linkImage: body.linkImage }),
-          ...(body.buttonPrivateMessage && { buttonPrivateMessage: body.buttonPrivateMessage }),
-          ...(body.messagePrivateMessage && { messagePrivateMessage: body.messagePrivateMessage }),
-          ...(body.messageOnClick && { messageOnClick: body.messageOnClick }),
+          ...(body.buttonPrivateMessage && {
+            buttonPrivateMessage: body.buttonPrivateMessage
+          }),
+          ...(body.messagePrivateMessage && {
+            messagePrivateMessage: body.messagePrivateMessage
+          }),
+          ...(body.messageOnClick && { messageOnClick: body.messageOnClick })
         }
       },
       { new: true }
@@ -91,15 +98,14 @@ export async function PATCH(
 
     return NextResponse.json(updatedBot);
   } catch (error) {
-    console.error('Error updating bot:', error);
-    return NextResponse.json({ error: 'Failed to update bot' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to update bot' },
+      { status: 500 }
+    );
   }
 }
 
-export async function DELETE(
-  _request: NextRequest,
-  context: RouteParams
-) {
+export async function DELETE(_request: NextRequest, context: RouteParams) {
   try {
     const { id } = await context.params;
     await connectDB();
@@ -109,6 +115,9 @@ export async function DELETE(
     }
     return NextResponse.json({ message: 'Bot deleted successfully' });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to delete bot' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to delete bot' },
+      { status: 500 }
+    );
   }
 }

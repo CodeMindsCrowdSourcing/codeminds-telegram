@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Heading } from '@/components/ui/heading';
 import { Separator } from '@/components/ui/separator';
-import { Plus, Loader2 } from 'lucide-react';
+import { Plus, Loader2, ExternalLink } from 'lucide-react';
 import { BotTable } from '@/features/telegram-bot/components/bot-table';
 import { TelegramBot } from '@/types/telegram-bot';
 import { useState, useEffect } from 'react';
@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,9 +29,12 @@ export default function TelegramBotsPage() {
   const [newBotToken, setNewBotToken] = useState('');
   const [newBotButtonText, setNewBotButtonText] = useState('');
   const [newBotInfoText, setNewBotInfoText] = useState('');
-  const [newBotButtonPrivateMessage, setNewBotButtonPrivateMessage] = useState('');
-  const [newBotMessagePrivateMessage, setNewBotMessagePrivateMessage] = useState('');
+  const [newBotButtonPrivateMessage, setNewBotButtonPrivateMessage] =
+    useState('');
+  const [newBotMessagePrivateMessage, setNewBotMessagePrivateMessage] =
+    useState('');
   const [newBotMessageOnClick, setNewBotMessageOnClick] = useState('');
+  const [isInfoDialogOpen, setIsInfoDialogOpen] = useState(false);
 
   const fetchBots = async () => {
     try {
@@ -76,9 +80,9 @@ export default function TelegramBotsPage() {
       const response = await fetch(`/api/telegram-bot/${botId}`, {
         method: 'PATCH',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ isRunning: true }),
+        body: JSON.stringify({ isRunning: true })
       });
 
       if (!response.ok) {
@@ -88,11 +92,11 @@ export default function TelegramBotsPage() {
 
       // Get the updated bot data
       const updatedBot = await response.json();
-      
+
       // Update the bot in the local state
-      setBots(prevBots => 
-        prevBots.map(bot => 
-          bot.id === botId 
+      setBots((prevBots) =>
+        prevBots.map((bot) =>
+          bot.id === botId
             ? {
                 ...bot,
                 isRunning: updatedBot.isRunning,
@@ -122,9 +126,9 @@ export default function TelegramBotsPage() {
       const response = await fetch(`/api/telegram-bot/${botId}`, {
         method: 'PATCH',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ isRunning: false }),
+        body: JSON.stringify({ isRunning: false })
       });
 
       if (!response.ok) {
@@ -135,9 +139,9 @@ export default function TelegramBotsPage() {
       // Get the updated bot data
       const updatedBot = await response.json();
       // Update the bot in the local state
-      setBots(prevBots => 
-        prevBots.map(bot => 
-          bot.id === botId 
+      setBots((prevBots) =>
+        prevBots.map((bot) =>
+          bot.id === botId
             ? {
                 ...bot,
                 isRunning: updatedBot.isRunning,
@@ -164,7 +168,7 @@ export default function TelegramBotsPage() {
   const handleDeleteBot = async (botId: string) => {
     try {
       // Find the bot to check if it's running
-      const bot = bots.find(b => b.id === botId);
+      const bot = bots.find((b) => b.id === botId);
       if (!bot) {
         throw new Error('Bot not found');
       }
@@ -172,13 +176,13 @@ export default function TelegramBotsPage() {
       // If bot is running, stop it first
       if (bot.isRunning) {
         await fetch(`/api/telegram-bot/${botId}/stop`, {
-          method: 'POST',
+          method: 'POST'
         });
       }
 
       // Then delete the bot
       const response = await fetch(`/api/telegram-bot/${botId}`, {
-        method: 'DELETE',
+        method: 'DELETE'
       });
 
       if (!response.ok) {
@@ -199,13 +203,13 @@ export default function TelegramBotsPage() {
   const handleAddBot = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isAddingBot) return;
-    
+
     try {
       setIsAddingBot(true);
       const response = await fetch('/api/telegram-bot', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           name: newBotName,
@@ -216,9 +220,13 @@ export default function TelegramBotsPage() {
           authorId: '',
           linkImage: '/images/strange.jpg',
           buttonPrivateMessage: newBotButtonPrivateMessage || '👤 Open profile',
-          messagePrivateMessage: newBotMessagePrivateMessage || 'Thank you for your interest! Click the button below to open the author\'s profile:',
-          messageOnClick: newBotMessageOnClick || 'Thank you for clicking! Processing your request...',
-        }),
+          messagePrivateMessage:
+            newBotMessagePrivateMessage ||
+            "Thank you for your interest! Click the button below to open the author's profile:",
+          messageOnClick:
+            newBotMessageOnClick ||
+            'Thank you for clicking! Processing your request...'
+        })
       });
 
       if (!response.ok) {
@@ -227,6 +235,7 @@ export default function TelegramBotsPage() {
 
       toast.success('Bot added successfully!');
       setIsDialogOpen(false);
+      setIsInfoDialogOpen(true);
       setNewBotName('');
       setNewBotToken('');
       setNewBotButtonText('');
@@ -251,9 +260,9 @@ export default function TelegramBotsPage() {
       const response = await fetch(`/api/telegram-bot/${botId}`, {
         method: 'PATCH',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(data)
       });
 
       if (!response.ok) {
@@ -261,14 +270,18 @@ export default function TelegramBotsPage() {
       }
 
       const updatedBot = await response.json();
-      setBots(prevBots => prevBots.map(bot => 
-        bot.id === botId ? {
-          ...bot,
-          ...updatedBot,
-          createdAt: new Date(updatedBot.createdAt),
-          updatedAt: new Date(updatedBot.updatedAt)
-        } : bot
-      ));
+      setBots((prevBots) =>
+        prevBots.map((bot) =>
+          bot.id === botId
+            ? {
+                ...bot,
+                ...updatedBot,
+                createdAt: new Date(updatedBot.createdAt),
+                updatedAt: new Date(updatedBot.updatedAt)
+              }
+            : bot
+        )
+      );
 
       toast.success('Bot updated successfully');
     } catch (error) {
@@ -282,10 +295,10 @@ export default function TelegramBotsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <div className="flex flex-col items-center gap-2">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Loading bots...</p>
+      <div className='flex h-screen w-full items-center justify-center'>
+        <div className='flex flex-col items-center gap-2'>
+          <Loader2 className='text-primary h-8 w-8 animate-spin' />
+          <p className='text-muted-foreground text-sm'>Loading bots...</p>
         </div>
       </div>
     );
@@ -356,21 +369,29 @@ export default function TelegramBotsPage() {
                 />
               </div>
               <div className='space-y-2'>
-                <Label htmlFor='buttonPrivateMessage'>Private Message Button Text</Label>
+                <Label htmlFor='buttonPrivateMessage'>
+                  Private Message Button Text
+                </Label>
                 <Input
                   id='buttonPrivateMessage'
                   value={newBotButtonPrivateMessage}
-                  onChange={(e) => setNewBotButtonPrivateMessage(e.target.value)}
+                  onChange={(e) =>
+                    setNewBotButtonPrivateMessage(e.target.value)
+                  }
                   placeholder='Enter private message button text'
                   disabled={isAddingBot}
                 />
               </div>
               <div className='space-y-2'>
-                <Label htmlFor='messagePrivateMessage'>Private Message Text</Label>
+                <Label htmlFor='messagePrivateMessage'>
+                  Private Message Text
+                </Label>
                 <Input
                   id='messagePrivateMessage'
                   value={newBotMessagePrivateMessage}
-                  onChange={(e) => setNewBotMessagePrivateMessage(e.target.value)}
+                  onChange={(e) =>
+                    setNewBotMessagePrivateMessage(e.target.value)
+                  }
                   placeholder='Enter private message text'
                   disabled={isAddingBot}
                 />
@@ -388,7 +409,7 @@ export default function TelegramBotsPage() {
               <Button type='submit' className='w-full' disabled={isAddingBot}>
                 {isAddingBot ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                     Adding Bot...
                   </>
                 ) : (
@@ -400,15 +421,98 @@ export default function TelegramBotsPage() {
         </Dialog>
       </div>
       <Separator />
-      <div className='flex-1 min-h-[400px]'>
-        <BotTable
-          data={bots}
-          onStartBot={handleStartBot}
-          onStopBot={handleStopBot}
-          onDeleteBot={handleDeleteBot}
-          onUpdateBot={handleUpdateBot}
-        />
+      <div className='min-h-[450px] flex-1'>
+        {bots.length === 0 ? (
+          <div className='flex h-[450px] w-full flex-col items-center justify-center space-y-4 text-center'>
+            <h3 className='text-lg font-medium'>No Bots Found</h3>
+            <div className='text-muted-foreground max-w-[700px] space-y-2 text-sm'>
+              <p>
+                To add a working bot and send messages, you first need to
+                register it. Visit{' '}
+                <a
+                  href='http://t.me/BotFather'
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  className='text-primary inline-flex items-center hover:underline'
+                >
+                  @BotFather <ExternalLink className='ml-1 h-3 w-3' />
+                </a>
+              </p>
+              <p>
+                Use the{' '}
+                <span className='text-primary font-semibold'>/newbot</span>{' '}
+                command to create a new bot. Enter all required information and{' '}
+                <span className='text-primary font-semibold'>
+                  copy the token
+                </span>{' '}
+                to add the bot to the website in the{' '}
+                <span className='text-primary font-semibold'>Bot Token</span>{' '}
+                field.
+              </p>
+              <p>
+                After successfully adding the bot, you need to{' '}
+                <span className='text-primary font-semibold'>start it</span>{' '}
+                using the{' '}
+                <span className='text-primary font-semibold'>Start</span> button
+                next to the table.
+              </p>
+            </div>
+            <Button onClick={() => setIsDialogOpen(true)}>
+              <Plus className='mr-2 h-4 w-4' />
+              Add Your First Bot
+            </Button>
+          </div>
+        ) : (
+          <BotTable
+            data={bots}
+            onStartBot={handleStartBot}
+            onStopBot={handleStopBot}
+            onDeleteBot={handleDeleteBot}
+            onUpdateBot={handleUpdateBot}
+          />
+        )}
       </div>
+
+      <Dialog open={isInfoDialogOpen} onOpenChange={setIsInfoDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Important Information</DialogTitle>
+            <DialogDescription>
+              Please follow these steps to ensure your bot works correctly:
+            </DialogDescription>
+          </DialogHeader>
+          <div className='space-y-4'>
+            <div className='space-y-2'>
+              <h4 className='font-medium'>Step 1: Get Author ID</h4>
+              <p className='text-muted-foreground text-sm'>
+                Send the command{' '}
+                <code className='bg-muted rounded px-1 py-0.5'>/start</code> to
+                your bot in Telegram. The bot will respond with your Author ID.
+                This ID is required for the button to work properly.
+              </p>
+            </div>
+            <div className='space-y-2'>
+              <h4 className='font-medium'>Step 2: Complete Bot Settings</h4>
+              <p className='text-muted-foreground text-sm'>
+                Make sure to fill in all the bot settings in the edit menu:
+              </p>
+              <ul className='text-muted-foreground list-inside list-disc space-y-1 text-sm'>
+                <li>Button Text</li>
+                <li>Info Text</li>
+                <li>Author ID (from Step 1)</li>
+                <li>Private Message Button Text</li>
+                <li>Private Message Text</li>
+                <li>Click Message</li>
+              </ul>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setIsInfoDialogOpen(false)}>
+              I Understand
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,9 +1,22 @@
 'use client';
 
-import { ColumnDef, getCoreRowModel, useReactTable } from '@tanstack/react-table';
+import {
+  ColumnDef,
+  getCoreRowModel,
+  useReactTable
+} from '@tanstack/react-table';
 import { format } from 'date-fns';
-import { MoreHorizontal, PlayCircle, PowerOff, Trash2, Settings, Users, Loader2 } from 'lucide-react';
+import {
+  MoreHorizontal,
+  PlayCircle,
+  PowerOff,
+  Trash2,
+  Settings,
+  Users
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -12,7 +25,7 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { DataTable } from '@/components/ui/table/data-table';
 import { TelegramBot } from '@/types/telegram-bot';
@@ -22,11 +35,10 @@ import {
   DialogContent,
   DialogDescription,
   DialogHeader,
-  DialogTitle,
+  DialogTitle
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useState, useEffect } from 'react';
 
 interface BotTableProps {
   data: TelegramBot[];
@@ -36,7 +48,7 @@ interface BotTableProps {
   onUpdateBot?: (botId: string, data: Partial<TelegramBot>) => Promise<void>;
 }
 
-interface ActionsCellProps {
+interface ActionCellProps {
   bot: TelegramBot;
   onStartBot?: (botId: string) => Promise<void>;
   onStopBot?: (botId: string) => Promise<void>;
@@ -44,93 +56,66 @@ interface ActionsCellProps {
   onUpdateBot?: (botId: string, data: Partial<TelegramBot>) => Promise<void>;
 }
 
-function ActionsCell({ bot, onStartBot, onStopBot, onDeleteBot, onUpdateBot }: ActionsCellProps) {
+function ActionCell({
+  bot,
+  onStartBot,
+  onStopBot,
+  onDeleteBot,
+  onUpdateBot
+}: ActionCellProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editData, setEditData] = useState({
-    buttonText: '',
-    infoText: '',
-    authorId: '',
-    linkImage: '',
-    buttonPrivateMessage: '',
-    messagePrivateMessage: '',
-    messageOnClick: '',
+    buttonText: bot.buttonText,
+    infoText: bot.infoText,
+    authorId: bot.authorId,
+    linkImage: bot.linkImage
   });
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    if (isEditDialogOpen && bot) {
-      setEditData({
-        buttonText: bot.buttonText,
-        infoText: bot.infoText,
-        authorId: bot.authorId,
-        linkImage: bot.linkImage,
-        buttonPrivateMessage: bot.buttonPrivateMessage || '',
-        messagePrivateMessage: bot.messagePrivateMessage || '',
-        messageOnClick: bot.messageOnClick || '',
-      });
-    }
+    setEditData({
+      buttonText: bot.buttonText,
+      infoText: bot.infoText,
+      authorId: bot.authorId,
+      linkImage: bot.linkImage
+    });
   }, [isEditDialogOpen, bot]);
 
   const handleAction = async (
     action: () => Promise<void>,
-    successMessage: string,
-    type: 'start' | 'stop' | 'delete' = 'start'
+    successMessage: string
   ) => {
-    if (isLoading) return; // Prevent duplicate requests
-    
     try {
       setIsLoading(true);
-      
-      // For delete action, close the dropdown menu
-      if (type === 'delete') {
-        const dropdownTrigger = document.querySelector('[aria-expanded="true"]') as HTMLElement;
-        if (dropdownTrigger) {
-          dropdownTrigger.click();
-        }
-      }
-      
       await action();
-      // Success message is now handled by the parent component for all actions
-      // This ensures we only show success after confirming the action worked
+      toast.success(successMessage);
     } catch (error) {
-      if (error instanceof Error) {
-        toast.error(error.message);
-      } else {
-        toast.error(`Failed to ${type} bot`);
-      }
+      console.error('Error performing action:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleUpdate = async (bot: TelegramBot) => {
-    if (!onUpdateBot) return;
-    
+  const handleUpdate = async () => {
+    if (!onUpdateBot || !onStopBot || !onStartBot) return;
     try {
-      setIsLoading(true);
-      
-      // Update bot parameters
-      await onUpdateBot(bot.id, {
-        buttonText: editData.buttonText,
-        infoText: editData.infoText,
-        authorId: editData.authorId,
-        linkImage: editData.linkImage,
-        buttonPrivateMessage: editData.buttonPrivateMessage,
-        messagePrivateMessage: editData.messagePrivateMessage,
-        messageOnClick: editData.messageOnClick,
-      });
+      const wasRunning = bot.isRunning;
 
-      setIsEditDialogOpen(false);
-      // Success message is handled by the parent component
-    } catch (error) {
-      if (error instanceof Error) {
-        toast.error(error.message);
-      } else {
-        toast.error('Failed to update bot parameters');
+      if (wasRunning) {
+        await onStopBot(bot.id);
       }
-    } finally {
-      setIsLoading(false);
+
+      await onUpdateBot(bot.id, editData);
+
+      if (wasRunning) {
+        await onStartBot(bot.id);
+      }
+
+      toast.success('Bot parameters updated successfully');
+      setIsEditDialogOpen(false);
+    } catch (error) {
+      toast.error('Failed to update bot parameters');
     }
   };
 
@@ -141,89 +126,56 @@ function ActionsCell({ bot, onStartBot, onStopBot, onDeleteBot, onUpdateBot }: A
           <DialogHeader>
             <DialogTitle>Edit Bot Parameters</DialogTitle>
             <DialogDescription>
-              Update the bot&apos;s message and button settings
+              Update the bots message and button settings
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="buttonText">Button Text</Label>
+          <div className='space-y-4'>
+            <div className='space-y-2'>
+              <Label htmlFor='buttonText'>Button Text</Label>
               <Input
-                id="buttonText"
+                id='buttonText'
                 value={editData.buttonText}
-                onChange={(e) => setEditData({ ...editData, buttonText: e.target.value })}
-                placeholder="Enter button text"
-                disabled={isLoading}
+                onChange={(e) =>
+                  setEditData({ ...editData, buttonText: e.target.value })
+                }
+                placeholder='Enter button text'
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="infoText">Info Text</Label>
+            <div className='space-y-2'>
+              <Label htmlFor='infoText'>Info Text</Label>
               <Input
-                id="infoText"
+                id='infoText'
                 value={editData.infoText}
-                onChange={(e) => setEditData({ ...editData, infoText: e.target.value })}
-                placeholder="Enter info text"
-                disabled={isLoading}
+                onChange={(e) =>
+                  setEditData({ ...editData, infoText: e.target.value })
+                }
+                placeholder='Enter info text'
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="authorId">Author ID</Label>
+            <div className='space-y-2'>
+              <Label htmlFor='authorId'>Author ID</Label>
               <Input
-                id="authorId"
+                id='authorId'
                 value={editData.authorId}
-                onChange={(e) => setEditData({ ...editData, authorId: e.target.value })}
-                placeholder="Enter author ID"
-                disabled={isLoading}
+                onChange={(e) =>
+                  setEditData({ ...editData, authorId: e.target.value })
+                }
+                placeholder='Enter author ID'
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="linkImage">Image URL</Label>
+            <div className='space-y-2'>
+              <Label htmlFor='linkImage'>Image URL</Label>
               <Input
-                id="linkImage"
+                id='linkImage'
                 value={editData.linkImage}
-                onChange={(e) => setEditData({ ...editData, linkImage: e.target.value })}
-                placeholder="Enter image URL"
-                disabled={isLoading}
+                onChange={(e) =>
+                  setEditData({ ...editData, linkImage: e.target.value })
+                }
+                placeholder='Enter image URL'
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="buttonPrivateMessage">Private Message Button Text</Label>
-              <Input
-                id="buttonPrivateMessage"
-                value={editData.buttonPrivateMessage}
-                onChange={(e) => setEditData({ ...editData, buttonPrivateMessage: e.target.value })}
-                placeholder="Enter private message button text"
-                disabled={isLoading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="messagePrivateMessage">Private Message Text</Label>
-              <Input
-                id="messagePrivateMessage"
-                value={editData.messagePrivateMessage}
-                onChange={(e) => setEditData({ ...editData, messagePrivateMessage: e.target.value })}
-                placeholder="Enter private message text"
-                disabled={isLoading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="messageOnClick">Click Message</Label>
-              <Input
-                id="messageOnClick"
-                value={editData.messageOnClick}
-                onChange={(e) => setEditData({ ...editData, messageOnClick: e.target.value })}
-                placeholder="Enter message to show on click"
-                disabled={isLoading}
-              />
-            </div>
-            <Button onClick={() => handleUpdate(bot)} className="w-full" disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving Changes...
-                </>
-              ) : (
-                'Save Changes'
-              )}
+            <Button onClick={handleUpdate} className='w-full'>
+              Save Changes
             </Button>
           </div>
         </DialogContent>
@@ -231,12 +183,12 @@ function ActionsCell({ bot, onStartBot, onStopBot, onDeleteBot, onUpdateBot }: A
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="h-8 w-8 p-0">
-            <span className="sr-only">Open menu</span>
-            <MoreHorizontal className="h-4 w-4" />
+          <Button variant='ghost' className='h-8 w-8 p-0'>
+            <span className='sr-only'>Open menu</span>
+            <MoreHorizontal className='h-4 w-4' />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
+        <DropdownMenuContent align='end'>
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
           <DropdownMenuItem
             onClick={() => {
@@ -247,51 +199,53 @@ function ActionsCell({ bot, onStartBot, onStopBot, onDeleteBot, onUpdateBot }: A
             Copy token
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)}>
-            <Settings className="mr-2 h-4 w-4" />
+            <Settings className='mr-2 h-4 w-4' />
             Edit Parameters
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => router.push(`/dashboard/telegram-bot/${bot.id}`)}
           >
-            <Users className="mr-2 h-4 w-4" />
+            <Users className='mr-2 h-4 w-4' />
             View Users
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={() =>
-              handleAction(
-                () => onStartBot?.(bot.id) ?? Promise.resolve(),
-                'Bot started successfully'
-              )
+              handleAction(async () => {
+                if (onStartBot) {
+                  await onStartBot(bot.id);
+                }
+              }, 'Bot started successfully')
             }
             disabled={bot.isRunning || isLoading}
           >
-            <PlayCircle className="mr-2 h-4 w-4" />
+            <PlayCircle className='mr-2 h-4 w-4' />
             Start
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() =>
-              handleAction(
-                () => onStopBot?.(bot.id) ?? Promise.resolve(),
-                'Bot stopped successfully'
-              )
+              handleAction(async () => {
+                if (onStopBot) {
+                  await onStopBot(bot.id);
+                }
+              }, 'Bot stopped successfully')
             }
             disabled={!bot.isRunning || isLoading}
           >
-            <PowerOff className="mr-2 h-4 w-4" />
+            <PowerOff className='mr-2 h-4 w-4' />
             Stop
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() =>
-              handleAction(
-                () => onDeleteBot?.(bot.id) ?? Promise.resolve(),
-                'Bot deleted successfully',
-                'delete'
-              )
+              handleAction(async () => {
+                if (onDeleteBot) {
+                  await onDeleteBot(bot.id);
+                }
+              }, 'Bot deleted successfully')
             }
             disabled={isLoading}
           >
-            <Trash2 className="mr-2 h-4 w-4" />
+            <Trash2 className='mr-2 h-4 w-4' />
             Delete
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -304,8 +258,11 @@ export const columns = ({
   onStartBot,
   onStopBot,
   onDeleteBot,
-  onUpdateBot,
-}: Pick<BotTableProps, 'onStartBot' | 'onStopBot' | 'onDeleteBot' | 'onUpdateBot'>): ColumnDef<TelegramBot>[] => [
+  onUpdateBot
+}: Pick<
+  BotTableProps,
+  'onStartBot' | 'onStopBot' | 'onDeleteBot' | 'onUpdateBot'
+>): ColumnDef<TelegramBot>[] => [
   {
     id: 'select',
     header: ({ table }) => (
@@ -315,34 +272,34 @@ export const columns = ({
           (table.getIsSomePageRowsSelected() && 'indeterminate')
         }
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
+        aria-label='Select all'
       />
     ),
     cell: ({ row }) => (
       <Checkbox
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
+        aria-label='Select row'
       />
     ),
     enableSorting: false,
-    enableHiding: false,
+    enableHiding: false
   },
   {
     accessorKey: 'name',
     header: 'Name',
     cell: ({ row }) => {
       const name = row.getValue('name') as string;
-      return <span className="font-medium">{name}</span>;
-    },
+      return <span className='font-medium'>{name}</span>;
+    }
   },
   {
     accessorKey: 'token',
     header: 'Token',
     cell: ({ row }) => {
       const token = row.getValue('token') as string;
-      return <span className="font-mono">{token.slice(0, 10)}...</span>;
-    },
+      return <span className='font-mono'>{token.slice(0, 10)}...</span>;
+    }
   },
   {
     accessorKey: 'isRunning',
@@ -350,21 +307,21 @@ export const columns = ({
     cell: ({ row }) => {
       const isRunning = row.getValue('isRunning') as boolean;
       return (
-        <div className="flex items-center gap-2">
+        <div className='flex items-center gap-2'>
           {isRunning ? (
             <>
-              <div className="h-2 w-2 rounded-full bg-green-500" />
+              <div className='h-2 w-2 rounded-full bg-green-500' />
               <span>Running</span>
             </>
           ) : (
             <>
-              <div className="h-2 w-2 rounded-full bg-red-500" />
+              <div className='h-2 w-2 rounded-full bg-red-500' />
               <span>Stopped</span>
             </>
           )}
         </div>
       );
-    },
+    }
   },
   {
     accessorKey: 'createdAt',
@@ -373,7 +330,7 @@ export const columns = ({
       const date = row.getValue('createdAt');
       if (!(date instanceof Date) && !(typeof date === 'string')) return null;
       return format(new Date(date), 'PPP');
-    },
+    }
   },
   {
     accessorKey: 'updatedAt',
@@ -382,27 +339,33 @@ export const columns = ({
       const date = row.getValue('updatedAt');
       if (!(date instanceof Date) && !(typeof date === 'string')) return null;
       return format(new Date(date), 'PPP');
-    },
+    }
   },
   {
     id: 'actions',
     cell: ({ row }) => (
-      <ActionsCell
+      <ActionCell
         bot={row.original}
         onStartBot={onStartBot}
         onStopBot={onStopBot}
         onDeleteBot={onDeleteBot}
         onUpdateBot={onUpdateBot}
       />
-    ),
-  },
+    )
+  }
 ];
 
-export function BotTable({ data, onStartBot, onStopBot, onDeleteBot, onUpdateBot }: BotTableProps) {
+export function BotTable({
+  data,
+  onStartBot,
+  onStopBot,
+  onDeleteBot,
+  onUpdateBot
+}: BotTableProps) {
   const table = useReactTable({
     data,
     columns: columns({ onStartBot, onStopBot, onDeleteBot, onUpdateBot }),
-    getCoreRowModel: getCoreRowModel(),
+    getCoreRowModel: getCoreRowModel()
   });
 
   return <DataTable table={table} />;
