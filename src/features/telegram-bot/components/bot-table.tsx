@@ -68,9 +68,14 @@ function ActionCell({
     buttonText: bot.buttonText,
     infoText: bot.infoText,
     authorId: bot.authorId,
-    linkImage: bot.linkImage
+    linkImage: bot.linkImage,
+    buttonPrivateMessage: bot.buttonPrivateMessage,
+    messagePrivateMessage: bot.messagePrivateMessage,
+    messageOnClick: bot.messageOnClick,
+    token: bot.token
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -78,7 +83,11 @@ function ActionCell({
       buttonText: bot.buttonText,
       infoText: bot.infoText,
       authorId: bot.authorId,
-      linkImage: bot.linkImage
+      linkImage: bot.linkImage,
+      buttonPrivateMessage: bot.buttonPrivateMessage,
+      messagePrivateMessage: bot.messagePrivateMessage,
+      messageOnClick: bot.messageOnClick,
+      token: bot.token
     });
   }, [isEditDialogOpen, bot]);
 
@@ -91,7 +100,6 @@ function ActionCell({
       await action();
       toast.success(successMessage);
     } catch (error) {
-      console.error('Error performing action:', error);
     } finally {
       setIsLoading(false);
     }
@@ -100,6 +108,7 @@ function ActionCell({
   const handleUpdate = async () => {
     if (!onUpdateBot || !onStopBot || !onStartBot) return;
     try {
+      setIsSaving(true);
       const wasRunning = bot.isRunning;
 
       if (wasRunning) {
@@ -111,11 +120,11 @@ function ActionCell({
       if (wasRunning) {
         await onStartBot(bot.id);
       }
-
-      toast.success('Bot parameters updated successfully');
       setIsEditDialogOpen(false);
     } catch (error) {
       toast.error('Failed to update bot parameters');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -130,6 +139,17 @@ function ActionCell({
             </DialogDescription>
           </DialogHeader>
           <div className='space-y-4'>
+            <div className='space-y-2'>
+              <Label htmlFor='token'>Bot Token</Label>
+              <Input
+                id='token'
+                value={editData.token}
+                onChange={(e) =>
+                  setEditData({ ...editData, token: e.target.value })
+                }
+                placeholder='Enter bot token'
+              />
+            </div>
             <div className='space-y-2'>
               <Label htmlFor='buttonText'>Button Text</Label>
               <Input
@@ -174,8 +194,55 @@ function ActionCell({
                 placeholder='Enter image URL'
               />
             </div>
-            <Button onClick={handleUpdate} className='w-full'>
-              Save Changes
+            <div className='space-y-2'>
+              <Label htmlFor='buttonPrivateMessage'>
+                Private Message Button Text
+              </Label>
+              <Input
+                id='buttonPrivateMessage'
+                value={editData.buttonPrivateMessage}
+                onChange={(e) =>
+                  setEditData({
+                    ...editData,
+                    buttonPrivateMessage: e.target.value
+                  })
+                }
+                placeholder='Enter private message button text'
+              />
+            </div>
+            <div className='space-y-2'>
+              <Label htmlFor='messagePrivateMessage'>
+                Private Message Text
+              </Label>
+              <Input
+                id='messagePrivateMessage'
+                value={editData.messagePrivateMessage}
+                onChange={(e) =>
+                  setEditData({
+                    ...editData,
+                    messagePrivateMessage: e.target.value
+                  })
+                }
+                placeholder='Enter private message text'
+              />
+            </div>
+            <div className='space-y-2'>
+              <Label htmlFor='messageOnClick'>Click Message</Label>
+              <Input
+                id='messageOnClick'
+                value={editData.messageOnClick}
+                onChange={(e) =>
+                  setEditData({ ...editData, messageOnClick: e.target.value })
+                }
+                placeholder='Enter click message'
+              />
+            </div>
+            <Button
+              onClick={handleUpdate}
+              className='w-full'
+              disabled={isSaving}
+            >
+              {isSaving ? 'Saving...' : 'Save Changes'}
             </Button>
           </div>
         </DialogContent>

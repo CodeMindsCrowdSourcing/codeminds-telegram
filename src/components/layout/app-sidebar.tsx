@@ -38,7 +38,6 @@ import {
   IconChevronsDown,
   IconCreditCard,
   IconLogout,
-  IconPhotoUp,
   IconUserCircle
 } from '@tabler/icons-react';
 import { SignOutButton } from '@clerk/nextjs';
@@ -47,11 +46,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import * as React from 'react';
 import { Icons } from '../icons';
 import { OrgSwitcher } from '../org-switcher';
-export const company = {
-  name: 'Acme Inc',
-  logo: IconPhotoUp,
-  plan: 'Enterprise'
-};
 
 const tenants = [
   { id: '1', name: 'Acme Inc' },
@@ -64,6 +58,7 @@ export default function AppSidebar() {
   const { isOpen } = useMediaQuery();
   const { user } = useUser();
   const router = useRouter();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleSwitchTenant = (_tenantId: string) => {
     // Tenant switching functionality would be implemented here
   };

@@ -63,13 +63,11 @@ export default function WalletPage() {
       };
 
       // Send transaction
-      const result = await tonConnectUI.sendTransaction(transaction);
-
+      await tonConnectUI.sendTransaction(transaction);
       toast.success(`Transfer of ${amount} TON initiated`);
       setIsDialogOpen(false);
       setAmount('');
     } catch (error) {
-      console.error('Transfer error:', error);
       toast.error('Failed to transfer funds');
     } finally {
       setIsLoading(false);

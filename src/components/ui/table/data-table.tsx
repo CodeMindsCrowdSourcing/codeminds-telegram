@@ -11,7 +11,6 @@ import {
   TableRow
 } from '@/components/ui/table';
 import { getCommonPinningStyles } from '@/lib/data-table';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 interface DataTableProps<TData> extends React.ComponentProps<'div'> {
   table: TanstackTable<TData>;
@@ -26,7 +25,7 @@ export function DataTable<TData>({
   return (
     <div className='flex flex-1 flex-col space-y-4'>
       {children}
-      <div className='relative flex flex-1 min-h-[200px]'>
+      <div className='relative flex min-h-[200px] flex-1'>
         <div className='absolute inset-0 rounded-md border'>
           <Table>
             <TableHeader>

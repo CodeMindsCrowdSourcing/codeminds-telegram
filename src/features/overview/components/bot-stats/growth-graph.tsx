@@ -6,8 +6,7 @@ import {
   CartesianGrid,
   XAxis,
   YAxis,
-  Tooltip,
-  ResponsiveContainer
+  Tooltip
 } from 'recharts';
 import {
   Card,
@@ -16,11 +15,7 @@ import {
   CardHeader,
   CardTitle
 } from '@/components/ui/card';
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent
-} from '@/components/ui/chart';
+import { ChartContainer } from '@/components/ui/chart';
 import { IconTrendingUp } from '@tabler/icons-react';
 
 interface GrowthData {

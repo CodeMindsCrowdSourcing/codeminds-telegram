@@ -32,11 +32,13 @@ export default function TermsOfUsePage() {
         </div>
 
         <div className='space-y-2'>
-          <h2 className='text-xl font-semibold'>3. User Responsibilities</h2>
+          <h2 className='text-xl font-semibold'>
+            3. User&apos;s Responsibilities
+          </h2>
           <p className='text-muted-foreground'>Users are responsible for:</p>
           <ul className='text-muted-foreground list-disc pl-6'>
             <li>Maintaining the security of their account</li>
-            <li>Complying with Telegram's terms of service</li>
+            <li>Complying with Telegram&apos;s terms of service</li>
             <li>Using the service in accordance with applicable laws</li>
             <li>Not using the service for any illegal or harmful purposes</li>
           </ul>
@@ -64,9 +66,9 @@ export default function TermsOfUsePage() {
         <div className='space-y-2'>
           <h2 className='text-xl font-semibold'>6. Disclaimer</h2>
           <p className='text-muted-foreground'>
-            Our service is provided "as is" without any warranties. We are not
-            responsible for any damages or losses resulting from the use of our
-            service.
+            Our service is provided &quot;as is&quot; without any warranties. We
+            are not responsible for any damages or losses resulting from the use
+            of our service.
           </p>
         </div>
 

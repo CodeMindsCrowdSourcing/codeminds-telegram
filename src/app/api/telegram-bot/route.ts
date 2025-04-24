@@ -22,7 +22,10 @@ export async function GET() {
       // Get user data from Clerk
       const clerkUser = await currentUser();
       if (!clerkUser) {
-        return NextResponse.json({ error: 'User data not found' }, { status: 404 });
+        return NextResponse.json(
+          { error: 'User data not found' },
+          { status: 404 }
+        );
       }
 
       // Create new user
@@ -30,15 +33,17 @@ export async function GET() {
         clerkId: userId,
         email: clerkUser.emailAddresses[0].emailAddress,
         name: `${clerkUser.firstName} ${clerkUser.lastName}`.trim(),
-        bots: [],
+        bots: []
       });
     }
 
     const bots = await TelegramBotModel.find({ owner: user._id });
     return NextResponse.json(bots);
   } catch (error) {
-    console.error('Error fetching bots:', error);
-    return NextResponse.json({ error: 'Failed to fetch bots' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to fetch bots' },
+      { status: 500 }
+    );
   }
 }
 
@@ -61,7 +66,10 @@ export async function POST(request: Request) {
       // Get user data from Clerk
       const clerkUser = await currentUser();
       if (!clerkUser) {
-        return NextResponse.json({ error: 'User data not found' }, { status: 404 });
+        return NextResponse.json(
+          { error: 'User data not found' },
+          { status: 404 }
+        );
       }
 
       // Create new user
@@ -69,7 +77,7 @@ export async function POST(request: Request) {
         clerkId: userId,
         email: clerkUser.emailAddresses[0].emailAddress,
         name: `${clerkUser.firstName} ${clerkUser.lastName}`.trim(),
-        bots: [],
+        bots: []
       });
     }
 
@@ -86,7 +94,7 @@ export async function POST(request: Request) {
       buttonPrivateMessage: data.buttonPrivateMessage,
       messagePrivateMessage: data.messagePrivateMessage,
       messageOnClick: data.messageOnClick,
-      users: [],
+      users: []
     });
 
     await bot.save();
@@ -97,7 +105,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json(bot);
   } catch (error) {
-    console.error('Error creating bot:', error);
-    return NextResponse.json({ error: 'Failed to create bot' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to create bot' },
+      { status: 500 }
+    );
   }
 }

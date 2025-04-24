@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Heading } from '@/components/ui/heading';
 import { Separator } from '@/components/ui/separator';
 import { UserTable } from '@/features/telegram-bot/components/user-table';
@@ -21,7 +21,7 @@ export default function BotUsersPage({
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const response = await fetch(
         `/api/telegram-bot/${resolvedParams.id}/users`
@@ -52,11 +52,11 @@ export default function BotUsersPage({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [resolvedParams.id]);
 
   useEffect(() => {
     fetchUsers();
-  }, [resolvedParams.id]);
+  }, [fetchUsers]);
 
   if (isLoading) {
     return (
