@@ -306,15 +306,15 @@ export default function TelegramBotsPage() {
 
   return (
     <div className='flex h-full flex-col space-y-4 p-8 pt-6'>
-      <div className='flex items-center justify-between'>
+      <div className="flex items-center justify-between">
         <Heading
-          title='Telegram Bots'
-          description='Manage your Telegram bots'
+          title="Telegram Bots"
+          description="Manage your Telegram bots"
         />
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button>
-              <Plus className='mr-2 h-4 w-4' />
+              <Plus className="mr-2 h-4 w-4" />
               Add New Bot
             </Button>
           </DialogTrigger>
@@ -325,7 +325,7 @@ export default function TelegramBotsPage() {
                 Enter your Telegram bot details
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleAddBot} className='space-y-4'>
+            <form onSubmit={handleAddBot} className="space-y-4">
               <div className='space-y-2'>
                 <Label htmlFor='name'>Bot Name</Label>
                 <Input
@@ -421,56 +421,18 @@ export default function TelegramBotsPage() {
         </Dialog>
       </div>
       <Separator />
-      <div className='min-h-[450px] flex-1'>
-        {bots.length === 0 ? (
-          <div className='flex h-[450px] w-full flex-col items-center justify-center space-y-4 text-center'>
-            <h3 className='text-lg font-medium'>No Bots Found</h3>
-            <div className='text-muted-foreground max-w-[700px] space-y-2 text-sm'>
-              <p>
-                To add a working bot and send messages, you first need to
-                register it. Visit{' '}
-                <a
-                  href='http://t.me/BotFather'
-                  target='_blank'
-                  rel='noopener noreferrer'
-                  className='text-primary inline-flex items-center hover:underline'
-                >
-                  @BotFather <ExternalLink className='ml-1 h-3 w-3' />
-                </a>
-              </p>
-              <p>
-                Use the{' '}
-                <span className='text-primary font-semibold'>/newbot</span>{' '}
-                command to create a new bot. Enter all required information and{' '}
-                <span className='text-primary font-semibold'>
-                  copy the token
-                </span>{' '}
-                to add the bot to the website in the{' '}
-                <span className='text-primary font-semibold'>Bot Token</span>{' '}
-                field.
-              </p>
-              <p>
-                After successfully adding the bot, you need to{' '}
-                <span className='text-primary font-semibold'>start it</span>{' '}
-                using the{' '}
-                <span className='text-primary font-semibold'>Start</span> button
-                next to the table.
-              </p>
-            </div>
-            <Button onClick={() => setIsDialogOpen(true)}>
-              <Plus className='mr-2 h-4 w-4' />
-              Add Your First Bot
-            </Button>
+      <div className="rounded-lg border bg-card">
+        <div className="relative overflow-hidden">
+          <div className="overflow-x-auto">
+            <BotTable
+              data={bots}
+              onStartBot={handleStartBot}
+              onStopBot={handleStopBot}
+              onDeleteBot={handleDeleteBot}
+              onUpdateBot={handleUpdateBot}
+            />
           </div>
-        ) : (
-          <BotTable
-            data={bots}
-            onStartBot={handleStartBot}
-            onStopBot={handleStopBot}
-            onDeleteBot={handleDeleteBot}
-            onUpdateBot={handleUpdateBot}
-          />
-        )}
+        </div>
       </div>
 
       <Dialog open={isInfoDialogOpen} onOpenChange={setIsInfoDialogOpen}>

@@ -30,6 +30,14 @@ export const navItems: NavItem[] = [
     items: [] // No child items
   },
   {
+    title: 'Custom Users',
+    url: '/dashboard/custom-users',
+    icon: 'user2',
+    shortcut: ['⌘', 'u'],
+    isActive: false,
+    items: [] // No child items
+  },
+  {
     title: 'Wallet',
     url: '/dashboard/wallet',
     icon: 'billing',
@@ -42,7 +50,6 @@ export const navItems: NavItem[] = [
     url: '/dashboard/profile',
     icon: 'userPen',
     isActive: false,
-
     items: []
   }
 ];

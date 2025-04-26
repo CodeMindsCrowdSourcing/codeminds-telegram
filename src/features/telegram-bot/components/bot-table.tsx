@@ -519,11 +519,6 @@ export function BotTable({
   onDeleteBot,
   onUpdateBot
 }: BotTableProps) {
-  const table = useReactTable({
-    data,
-    columns: columns({ onStartBot, onStopBot, onDeleteBot, onUpdateBot }),
-    getCoreRowModel: getCoreRowModel()
-  });
-
-  return <DataTable table={table} />;
+  const tableColumns = columns({ onStartBot, onStopBot, onDeleteBot, onUpdateBot });
+  return <DataTable columns={tableColumns} data={data} />;
 }

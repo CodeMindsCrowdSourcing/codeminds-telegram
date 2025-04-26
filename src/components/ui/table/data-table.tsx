@@ -1,5 +1,13 @@
-import { type Table as TanstackTable, flexRender } from '@tanstack/react-table';
+import {
+  ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  getPaginationRowModel,
+  useReactTable,
+  PaginationState
+} from '@tanstack/react-table';
 import type * as React from 'react';
+import { useState } from 'react';
 
 import { DataTablePagination } from '@/components/ui/table/data-table-pagination';
 import {
@@ -12,81 +20,99 @@ import {
 } from '@/components/ui/table';
 import { getCommonPinningStyles } from '@/lib/data-table';
 
-interface DataTableProps<TData> extends React.ComponentProps<'div'> {
-  table: TanstackTable<TData>;
+interface DataTableProps<TData> {
+  columns: ColumnDef<TData>[];
+  data: TData[];
   actionBar?: React.ReactNode;
+  pageSize?: number;
 }
 
 export function DataTable<TData>({
-  table,
+  columns,
+  data,
   actionBar,
-  children
+  pageSize = 10
 }: DataTableProps<TData>) {
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: pageSize
+  });
+
+  const table = useReactTable({
+    data,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    state: {
+      pagination
+    },
+    onPaginationChange: setPagination,
+    manualPagination: false,
+    pageCount: Math.ceil(data.length / pagination.pageSize)
+  });
+
   return (
-    <div className='flex flex-1 flex-col space-y-4'>
-      {children}
-      <div className='relative flex min-h-[200px] flex-1'>
-        <div className='absolute inset-0 rounded-md border'>
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <TableHead
-                      key={header.id}
-                      colSpan={header.colSpan}
+    <div className="flex flex-col">
+      <div className="relative">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead
+                    key={header.id}
+                    colSpan={header.colSpan}
+                    style={{
+                      ...getCommonPinningStyles({ column: header.column })
+                    }}
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && "selected"}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell
+                      key={cell.id}
                       style={{
-                        ...getCommonPinningStyles({ column: header.column })
+                        ...getCommonPinningStyles({ column: cell.column })
                       }}
                     >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
+                    </TableCell>
                   ))}
                 </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() && 'selected'}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell
-                        key={cell.id}
-                        style={{
-                          ...getCommonPinningStyles({ column: cell.column })
-                        }}
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={table.getAllColumns().length}
-                    className='h-24 text-center'
-                  >
-                    No results.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={table.getAllColumns().length}
+                  className="h-24 text-center"
+                >
+                  No results.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </div>
-      <div className='flex flex-col gap-2.5'>
+      <div className="mt-4">
         <DataTablePagination table={table} />
         {actionBar &&
           table.getFilteredSelectedRowModel().rows.length > 0 &&
