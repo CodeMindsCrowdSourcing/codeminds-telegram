@@ -3,6 +3,7 @@
 import {
   ColumnDef,
   getCoreRowModel,
+  getPaginationRowModel,
   useReactTable
 } from '@tanstack/react-table';
 import { format } from 'date-fns';
@@ -40,7 +41,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface BotTableProps {
   data: TelegramBot[];
@@ -520,5 +520,11 @@ export function BotTable({
   onUpdateBot
 }: BotTableProps) {
   const tableColumns = columns({ onStartBot, onStopBot, onDeleteBot, onUpdateBot });
-  return <DataTable columns={tableColumns} data={data} />;
+  const table = useReactTable<TelegramBot>({
+    data,
+    columns: tableColumns,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+  });
+  return <DataTable<TelegramBot> table={table} />;
 }

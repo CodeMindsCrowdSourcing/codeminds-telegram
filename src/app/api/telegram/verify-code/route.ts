@@ -3,7 +3,6 @@ import { TelegramClient } from 'telegram';
 import { StringSession } from 'telegram/sessions';
 import { cookies } from 'next/headers';
 import { auth } from '@clerk/nextjs/server';
-import { Api } from 'telegram/tl';
 import { TelegramSessionModel } from '@/models/telegram-session';
 import { connectDB } from '@/lib/db';
 
@@ -19,7 +18,7 @@ const telegramApiHash = apiHash;
 
 export async function POST(request: Request) {
   let client: TelegramClient | null = null;
-  
+
   try {
     const { userId } = await auth();
     if (!userId) {
@@ -41,17 +40,12 @@ export async function POST(request: Request) {
     const phoneCodeHash = cookieStore.get('phoneCodeHash')?.value;
     const phone = cookieStore.get('verifyPhone')?.value;
 
-    console.log('Retrieved code hash:', phoneCodeHash);
-    console.log('Retrieved phone:', phone);
-    console.log('Cookies:', [...cookieStore.getAll()].map(c => c.name));
-
     if (!phoneCodeHash || !phone) {
-      console.log('Missing cookies - phoneCodeHash:', !!phoneCodeHash, 'phone:', !!phone);
       return NextResponse.json(
-        { 
+        {
           error: 'Code expired, please request a new one',
-          debug: { 
-            hasCodeHash: !!phoneCodeHash, 
+          debug: {
+            hasCodeHash: !!phoneCodeHash,
             hasPhone: !!phone,
             cookies: [...cookieStore.getAll()].map(c => c.name)
           }
@@ -79,12 +73,6 @@ export async function POST(request: Request) {
     await client.connect();
 
     try {
-      console.log('Attempting sign in with:', {
-        phoneNumber: phone,
-        phoneCodeHash,
-        phoneCode: code
-      });
-
       // Use raw API method for sign in
       const signInResult = await client.invoke({
         _: 'auth.signIn',
@@ -92,8 +80,6 @@ export async function POST(request: Request) {
         phone_code_hash: phoneCodeHash,
         phone_code: code.toString()
       } as any);
-
-      console.log('Sign in result:', signInResult);
 
       // Get the session string for future use
       const sessionString = client.session.save() as unknown as string;
@@ -116,15 +102,13 @@ export async function POST(request: Request) {
       cookieStore.delete('phoneCodeHash');
       cookieStore.delete('verifyPhone');
 
-      return NextResponse.json({ 
+      return NextResponse.json({
         success: true,
         debug: {
           signInResult: signInResult?.className
         }
       });
     } catch (error: any) {
-      console.error('Sign in error:', error?.errorMessage);
-      
       if (error?.errorMessage === 'SESSION_PASSWORD_NEEDED') {
         return NextResponse.json(
           { error: '2FA is enabled. Please disable it in Telegram settings and try again.' },
@@ -149,9 +133,8 @@ export async function POST(request: Request) {
       throw error;
     }
   } catch (error: any) {
-    console.error('Error verifying code:', error);
     return NextResponse.json(
-      { 
+      {
         error: error?.errorMessage || error?.message || 'Failed to verify code',
         details: error?.errorMessage
       },
@@ -166,4 +149,4 @@ export async function POST(request: Request) {
       }
     }
   }
-} 
+}

@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Heading } from '@/components/ui/heading';
 import { Separator } from '@/components/ui/separator';
-import { Plus, Loader2, ExternalLink } from 'lucide-react';
+import { Plus, Loader2 } from 'lucide-react';
 import { BotTable } from '@/features/telegram-bot/components/bot-table';
 import { TelegramBot } from '@/types/telegram-bot';
 import { useState, useEffect } from 'react';

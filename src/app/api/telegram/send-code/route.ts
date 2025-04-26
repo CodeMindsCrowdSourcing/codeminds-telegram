@@ -3,7 +3,6 @@ import { TelegramClient } from 'telegram';
 import { StringSession } from 'telegram/sessions';
 import { cookies } from 'next/headers';
 import { auth } from "@clerk/nextjs/server";
-import { Api } from 'telegram/tl';
 
 const apiId = process.env.TELEGRAM_API_ID;
 const apiHash = process.env.TELEGRAM_API_HASH;
@@ -17,7 +16,7 @@ const telegramApiHash = apiHash;
 
 export async function POST(request: Request) {
   let client: TelegramClient | null = null;
-  
+
   try {
     const { userId } = await auth();
     if (!userId) {
@@ -41,7 +40,7 @@ export async function POST(request: Request) {
       new StringSession(''),
       telegramApiId,
       telegramApiHash,
-      { 
+      {
         connectionRetries: 10,
         deviceModel: 'Desktop',
         systemVersion: 'Windows 10',
@@ -63,8 +62,6 @@ export async function POST(request: Request) {
       true // forceSMS
     );
 
-    console.log('Send code result:', result);
-
     await client.disconnect();
     client = null;
 
@@ -83,7 +80,7 @@ export async function POST(request: Request) {
         path: '/',
         maxAge: 300 // 5 minutes
       });
-      
+
       cookieStore.set('verifyPhone', cleanPhone, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -92,10 +89,7 @@ export async function POST(request: Request) {
         maxAge: 300 // 5 minutes
       });
 
-      console.log('Stored code hash:', result.phoneCodeHash);
-      console.log('Stored phone:', cleanPhone);
-
-      return NextResponse.json({ 
+      return NextResponse.json({
         success: true,
         debug: {
           phoneCodeHash: result.phoneCodeHash,
@@ -107,8 +101,6 @@ export async function POST(request: Request) {
       throw new Error('Failed to get phone code hash');
     }
   } catch (error: any) {
-    console.error('Error sending code:', error);
-    
     // Check for specific Telegram errors
     if (error?.errorMessage?.includes('PHONE_NUMBER_INVALID')) {
       return NextResponse.json(
@@ -133,7 +125,7 @@ export async function POST(request: Request) {
 
     if (error?.errorMessage?.includes('SEND_CODE_UNAVAILABLE')) {
       return NextResponse.json(
-        { 
+        {
           error: 'Unable to send code. This could be due to:',
           details: [
             'Your phone number might be temporarily blocked by Telegram',
@@ -166,9 +158,9 @@ export async function POST(request: Request) {
         { status: 420 }
       );
     }
-    
+
     return NextResponse.json(
-      { 
+      {
         error: error?.errorMessage || error?.message || 'Failed to send code',
         details: error?.errorMessage,
         code: error?.code
@@ -176,12 +168,6 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   } finally {
-    if (client) {
-      try {
-        await client.disconnect();
-      } catch (e) {
-        console.error('Error disconnecting client:', e);
-      }
-    }
+    client = null;
   }
-} 
+}

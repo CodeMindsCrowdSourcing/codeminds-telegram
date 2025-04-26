@@ -78,7 +78,6 @@ export async function POST(request: Request) {
             error: 'User not found'
           };
         } catch (error) {
-          console.error('Error checking phone:', phone, error);
           return {
             phone,
             isFound: false,
@@ -91,10 +90,9 @@ export async function POST(request: Request) {
     await client.disconnect();
     return NextResponse.json({ results });
   } catch (error) {
-    console.error('Error checking phones:', error);
     return NextResponse.json(
       { error: 'Failed to check phones' },
       { status: 500 }
     );
   }
-} 
+}

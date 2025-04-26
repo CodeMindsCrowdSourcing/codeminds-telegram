@@ -4,14 +4,15 @@ import {
   getCoreRowModel,
   getPaginationRowModel,
   useReactTable,
-  PaginationState
+  PaginationState,
+  Table
 } from '@tanstack/react-table';
 import type * as React from 'react';
 import { useState } from 'react';
 
 import { DataTablePagination } from '@/components/ui/table/data-table-pagination';
 import {
-  Table,
+  Table as TableComponent,
   TableBody,
   TableCell,
   TableHead,
@@ -21,40 +22,19 @@ import {
 import { getCommonPinningStyles } from '@/lib/data-table';
 
 interface DataTableProps<TData> {
-  columns: ColumnDef<TData>[];
-  data: TData[];
-  actionBar?: React.ReactNode;
-  pageSize?: number;
+  table: Table<TData>;
+  children?: React.ReactNode;
 }
 
 export function DataTable<TData>({
-  columns,
-  data,
-  actionBar,
-  pageSize = 10
+  table,
+  children
 }: DataTableProps<TData>) {
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: pageSize
-  });
-
-  const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    state: {
-      pagination
-    },
-    onPaginationChange: setPagination,
-    manualPagination: false,
-    pageCount: Math.ceil(data.length / pagination.pageSize)
-  });
-
   return (
     <div className="flex flex-col">
+      {children}
       <div className="relative">
-        <Table>
+        <TableComponent>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -110,13 +90,10 @@ export function DataTable<TData>({
               </TableRow>
             )}
           </TableBody>
-        </Table>
+        </TableComponent>
       </div>
       <div className="mt-4">
         <DataTablePagination table={table} />
-        {actionBar &&
-          table.getFilteredSelectedRowModel().rows.length > 0 &&
-          actionBar}
       </div>
     </div>
   );

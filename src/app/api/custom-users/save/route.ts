@@ -7,7 +7,7 @@ import connectToDatabase from '@/lib/mongodb';
 export async function POST(request: Request) {
   try {
     const { users } = await request.json() as { users: CustomUser[] };
-    
+
     if (!Array.isArray(users)) {
       return NextResponse.json(
         { error: 'Invalid users data' },
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
 
     // Save only found users
     const foundUsers = users.filter(user => user.isFound);
-    
+
     // Save users to database
     const savedUsers = await Promise.all(
       foundUsers.map(async (user) => {
@@ -53,15 +53,14 @@ export async function POST(request: Request) {
       })
     );
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       message: 'Users saved successfully',
       count: savedUsers.length
     });
   } catch (error) {
-    console.error('Error saving users:', error);
     return NextResponse.json(
       { error: 'Error saving users' },
       { status: 500 }
     );
   }
-} 
+}

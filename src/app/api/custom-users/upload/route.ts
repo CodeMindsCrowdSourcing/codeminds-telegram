@@ -5,17 +5,17 @@ import { CustomUser } from '@/types/custom-user';
 function formatPhoneNumber(phone: string): string {
   // Remove all non-digit characters
   let cleaned = phone.replace(/\D/g, '');
-  
+
   // If number starts with 8, replace it with 7 (for Russian numbers)
   if (cleaned.startsWith('8')) {
     cleaned = '7' + cleaned.slice(1);
   }
-  
+
   // Add + if not present
   if (!cleaned.startsWith('+')) {
     cleaned = '+' + cleaned;
   }
-  
+
   return cleaned;
 }
 
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File;
-    
+
     if (!file) {
       return NextResponse.json(
         { error: 'No file uploaded' },
@@ -79,10 +79,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ users });
   } catch (error) {
-    console.error('Error processing file:', error);
     return NextResponse.json(
       { error: 'Error processing file' },
       { status: 500 }
     );
   }
-} 
+}

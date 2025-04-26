@@ -1,5 +1,4 @@
 'use client';
-import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,7 +8,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { UserAvatarProfile } from '@/components/user-avatar-profile';
 import { SignOutButton, useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 export function UserNav() {

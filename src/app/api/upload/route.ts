@@ -12,7 +12,7 @@ export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File;
-    
+
     if (!file) {
       return NextResponse.json(
         { error: 'No file uploaded' },
@@ -42,14 +42,13 @@ export async function POST(request: Request) {
     });
 
     // Return the secure URL from Cloudinary
-    return NextResponse.json({ 
-      url: (result as any).secure_url 
+    return NextResponse.json({
+      url: (result as any).secure_url
     });
   } catch (error) {
-    console.error('Error uploading file:', error);
     return NextResponse.json(
       { error: 'Error uploading file' },
       { status: 500 }
     );
   }
-} 
+}
