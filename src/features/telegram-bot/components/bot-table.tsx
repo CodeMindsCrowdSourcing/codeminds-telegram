@@ -79,6 +79,7 @@ function ActionCell({
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const router = useRouter();
 
@@ -137,6 +138,7 @@ function ActionCell({
     if (!file) return;
 
     try {
+      setIsUploading(true);
       const formData = new FormData();
       formData.append('file', file);
 
@@ -161,6 +163,8 @@ function ActionCell({
     } catch (error) {
       console.error('Upload error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to upload file');
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -227,6 +231,7 @@ function ActionCell({
                   setEditData({ ...editData, mediaType: value })
                 }
                 className="flex space-x-4"
+                disabled={isUploading}
               >
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="image" id="image" />
@@ -246,8 +251,16 @@ function ActionCell({
                 type='file'
                 accept={editData.mediaType === 'image' ? 'image/*' : 'video/*'}
                 onChange={handleFileUpload}
+                disabled={isUploading}
               />
             </div>
+
+            {isUploading && (
+              <div className="flex items-center justify-center py-4">
+                <div className="border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent"></div>
+                <span className="ml-2">Uploading...</span>
+              </div>
+            )}
 
             {previewUrl && (
               <div className='space-y-2'>
@@ -317,9 +330,9 @@ function ActionCell({
             <Button
               onClick={handleUpdate}
               className='w-full'
-              disabled={isSaving}
+              disabled={isSaving || isUploading}
             >
-              {isSaving ? 'Saving...' : 'Save Changes'}
+              {isSaving ? 'Saving...' : isUploading ? 'Uploading...' : 'Save Changes'}
             </Button>
           </div>
         </DialogContent>
