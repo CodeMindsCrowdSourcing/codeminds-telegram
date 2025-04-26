@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
-import { writeFile } from 'fs/promises';
-import { join } from 'path';
-import { v4 as uuidv4 } from 'uuid';
+import { v2 as cloudinary } from 'cloudinary';
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
 export async function POST(request: Request) {
   try {
@@ -15,29 +20,31 @@ export async function POST(request: Request) {
       );
     }
 
+    // Convert file to base64
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+    const base64String = buffer.toString('base64');
+    const dataURI = `data:${file.type};base64,${base64String}`;
 
-    // Get file extension
-    const fileExtension = file.name.split('.').pop();
-    
-    // Create a unique filename using UUID
-    const uniqueId = uuidv4();
-    const filename = `${uniqueId}.${fileExtension}`;
-    
-    // Save to public/uploads directory
-    const uploadDir = join(process.cwd(), 'public', 'uploads');
-    const filepath = join(uploadDir, filename);
-    
-    await writeFile(filepath, buffer);
-    
-    // Get the base URL from environment variable or use default
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    
-    // Return the full URL for the uploaded file
-    const url = `${baseUrl}/uploads/${filename}`;
-    
-    return NextResponse.json({ url });
+    // Upload to Cloudinary
+    const result = await new Promise((resolve, reject) => {
+      cloudinary.uploader.upload(
+        dataURI,
+        {
+          resource_type: 'auto', // Automatically detect if it's an image or video
+          folder: 'telegram-bot' // Optional: organize files in a folder
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+    });
+
+    // Return the secure URL from Cloudinary
+    return NextResponse.json({ 
+      url: (result as any).secure_url 
+    });
   } catch (error) {
     console.error('Error uploading file:', error);
     return NextResponse.json(
