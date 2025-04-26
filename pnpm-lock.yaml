@@ -234,7 +234,7 @@ importers:
         specifier: 5.7.2
         version: 5.7.2
       uuid:
-        specifier: ^11.0.3
+        specifier: ^11.1.0
         version: 11.1.0
       vaul:
         specifier: ^1.1.2

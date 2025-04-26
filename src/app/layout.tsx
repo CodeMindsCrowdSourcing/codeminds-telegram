@@ -17,8 +17,8 @@ const META_THEME_COLORS = {
 };
 
 export const metadata: Metadata = {
-  title: 'Next Shadcn',
-  description: 'Basic dashboard with Next.js and Shadcn'
+  title: 'CodeMinds',
+  description: 'Telegram bot dashboard',
 };
 
 export const viewport: Viewport = {

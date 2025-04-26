@@ -314,7 +314,9 @@ export default function OverViewLayout() {
                 User Statistics <IconUsers className='size-4' />
               </div>
               <div className='text-muted-foreground'>
-                {((stats.premiumUsers / stats.totalUsers) * 100).toFixed(1)}%
+                {stats.totalUsers > 0 
+                  ? ((stats.premiumUsers / stats.totalUsers) * 100).toFixed(1)
+                  : '0.0'}%
                 premium users
               </div>
             </CardFooter>
@@ -337,7 +339,9 @@ export default function OverViewLayout() {
                 Engagement Stats <IconMessage2 className='size-4' />
               </div>
               <div className='text-muted-foreground'>
-                {(stats.totalInteractions / stats.totalUsers).toFixed(1)} per
+                {stats.totalUsers > 0 
+                  ? (stats.totalInteractions / stats.totalUsers).toFixed(1)
+                  : '0.0'} per
                 user
               </div>
             </CardFooter>

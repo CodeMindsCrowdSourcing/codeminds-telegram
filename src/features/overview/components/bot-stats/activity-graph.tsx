@@ -38,7 +38,7 @@ export function ActivityGraph({ data }: ActivityGraphProps) {
       </CardHeader>
       <CardContent className='px-2 pt-4 sm:px-6 sm:pt-6'>
         <ChartContainer
-          className='aspect-auto h-[250px] w-full'
+          className='aspect-auto h-[300px] w-full'
           config={{
             users: { label: 'Users', color: 'var(--primary)' },
             interactions: {

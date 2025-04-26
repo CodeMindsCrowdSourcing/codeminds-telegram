@@ -39,6 +39,8 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface BotTableProps {
   data: TelegramBot[];
@@ -72,10 +74,12 @@ function ActionCell({
     buttonPrivateMessage: bot.buttonPrivateMessage,
     messagePrivateMessage: bot.messagePrivateMessage,
     messageOnClick: bot.messageOnClick,
-    token: bot.token
+    token: bot.token,
+    mediaType: 'image' as 'image' | 'video'
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -87,18 +91,18 @@ function ActionCell({
       buttonPrivateMessage: bot.buttonPrivateMessage,
       messagePrivateMessage: bot.messagePrivateMessage,
       messageOnClick: bot.messageOnClick,
-      token: bot.token
+      token: bot.token,
+      mediaType: bot.linkImage?.endsWith('.mp4') ? 'video' : 'image'
     });
+    setPreviewUrl(bot.linkImage || null);
   }, [isEditDialogOpen, bot]);
 
   const handleAction = async (
     action: () => Promise<void>,
-    successMessage: string
   ) => {
     try {
       setIsLoading(true);
       await action();
-      toast.success(successMessage);
     } catch (error) {
     } finally {
       setIsLoading(false);
@@ -128,10 +132,42 @@ function ActionCell({
     }
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Upload failed');
+      }
+
+      const data = await response.json();
+      if (!data.url) {
+        throw new Error('No URL returned from upload');
+      }
+
+      setEditData(prev => ({ ...prev, linkImage: data.url }));
+      setPreviewUrl(data.url);
+      toast.success('File uploaded successfully');
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to upload file');
+    }
+  };
+
   return (
     <>
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Edit Bot Parameters</DialogTitle>
             <DialogDescription>
@@ -184,16 +220,56 @@ function ActionCell({
               />
             </div>
             <div className='space-y-2'>
-              <Label htmlFor='linkImage'>Image URL</Label>
-              <Input
-                id='linkImage'
-                value={editData.linkImage}
-                onChange={(e) =>
-                  setEditData({ ...editData, linkImage: e.target.value })
+              <Label>Media Type</Label>
+              <RadioGroup
+                value={editData.mediaType}
+                onValueChange={(value: 'image' | 'video') =>
+                  setEditData({ ...editData, mediaType: value })
                 }
-                placeholder='Enter image URL'
+                className="flex space-x-4"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="image" id="image" />
+                  <Label htmlFor="image">Image</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="video" id="video" />
+                  <Label htmlFor="video">Video</Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            <div className='space-y-2'>
+              <Label htmlFor='media'>Upload Media</Label>
+              <Input
+                id='media'
+                type='file'
+                accept={editData.mediaType === 'image' ? 'image/*' : 'video/*'}
+                onChange={handleFileUpload}
               />
             </div>
+
+            {previewUrl && (
+              <div className='space-y-2'>
+                <Label>Preview</Label>
+                <div className='relative aspect-video w-full overflow-hidden rounded-lg border'>
+                  {editData.mediaType === 'image' ? (
+                    <img
+                      src={previewUrl}
+                      alt="Preview"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <video
+                      src={previewUrl}
+                      controls
+                      className="h-full w-full object-cover"
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className='space-y-2'>
               <Label htmlFor='buttonPrivateMessage'>
                 Private Message Button Text
@@ -237,6 +313,7 @@ function ActionCell({
                 placeholder='Enter click message'
               />
             </div>
+
             <Button
               onClick={handleUpdate}
               className='w-full'
@@ -282,7 +359,7 @@ function ActionCell({
                 if (onStartBot) {
                   await onStartBot(bot.id);
                 }
-              }, 'Bot started successfully')
+              })
             }
             disabled={bot.isRunning || isLoading}
           >
@@ -295,7 +372,7 @@ function ActionCell({
                 if (onStopBot) {
                   await onStopBot(bot.id);
                 }
-              }, 'Bot stopped successfully')
+              })
             }
             disabled={!bot.isRunning || isLoading}
           >
@@ -308,7 +385,7 @@ function ActionCell({
                 if (onDeleteBot) {
                   await onDeleteBot(bot.id);
                 }
-              }, 'Bot deleted successfully')
+              })
             }
             disabled={isLoading}
           >

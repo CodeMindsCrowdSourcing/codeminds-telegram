@@ -171,8 +171,24 @@ async function handleMyChatMember(bot: TelegramBot, update: TelegramUpdate) {
         ]
       };
 
-      // Send message with button
-      await sendMessage(bot.token, chatId, bot.infoText, keyboard);
+      // Send media with caption if available
+      if (bot.linkImage) {
+        const isVideo = bot.linkImage.endsWith('.mp4');
+        if (isVideo) {
+          await sendVideo(bot.token, chatId, bot.linkImage, {
+            caption: bot.infoText,
+            reply_markup: keyboard
+          });
+        } else {
+          await sendPhoto(bot.token, chatId, bot.linkImage, {
+            caption: bot.infoText,
+            reply_markup: keyboard
+          });
+        }
+      } else {
+        // Send message with button if no media
+        await sendMessage(bot.token, chatId, bot.infoText, keyboard);
+      }
     } catch (error) {
       throw new Error('Error sending welcome message:');
     }
@@ -371,4 +387,64 @@ async function sendMessage(
     })
   });
   return await response.json();
+}
+
+async function sendPhoto(
+  token: string,
+  chatId: number,
+  photo: string,
+  options?: {
+    caption?: string;
+    reply_markup?: InlineKeyboardMarkup;
+  }
+) {
+  const url = `https://api.telegram.org/bot${token}/sendPhoto`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      chat_id: chatId,
+      photo: photo,
+      caption: options?.caption,
+      reply_markup: options?.reply_markup
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to send photo');
+  }
+
+  return response.json();
+}
+
+async function sendVideo(
+  token: string,
+  chatId: number,
+  video: string,
+  options?: {
+    caption?: string;
+    reply_markup?: InlineKeyboardMarkup;
+  }
+) {
+  const url = `https://api.telegram.org/bot${token}/sendVideo`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      chat_id: chatId,
+      video: video,
+      caption: options?.caption,
+      reply_markup: options?.reply_markup
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to send video');
+  }
+
+  return response.json();
 }
