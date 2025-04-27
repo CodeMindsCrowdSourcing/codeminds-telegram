@@ -9,7 +9,7 @@ export async function POST(req: Request) {
   try {
     await connectDB();
     const { userId } = await auth();
-    
+
     if (!userId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { userId: customUserId, message } = await req.json();
+    const { userId: customUserId } = await req.json();
     const customUser = await CustomUserModel.findOne({
       _id: customUserId,
       userId: user._id
@@ -55,10 +55,9 @@ export async function POST(req: Request) {
       message: 'Message sent successfully'
     });
   } catch (error) {
-    console.error('Error sending message:', error);
     return NextResponse.json(
       { error: 'Failed to send message' },
       { status: 500 }
     );
   }
-} 
+}

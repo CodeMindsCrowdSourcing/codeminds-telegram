@@ -1,16 +1,18 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { auth } from "@clerk/nextjs/server";
 import connectDB from '@/lib/mongodb';
 import { CustomUserModel } from '@/models/custom-user';
 import { UserModel } from '@/models/user';
 
-export async function DELETE(
-  req: Request,
-  context: { params: { id: string } }
-) {
-  const { id } = await context.params; // <-- обязательно await здесь!
+type RouteParams = {
+  params: Promise<{
+    id: string;
+  }>;
+};
 
+export async function DELETE(_request: NextRequest, context: RouteParams) {
   try {
+    const { id } = await context.params;
     await connectDB();
     const { userId } = await auth();
 
@@ -48,7 +50,6 @@ export async function DELETE(
       message: 'User deleted successfully'
     });
   } catch (error) {
-    console.error('Error deleting custom user:', error);
     return NextResponse.json(
       { error: 'Failed to delete user' },
       { status: 500 }

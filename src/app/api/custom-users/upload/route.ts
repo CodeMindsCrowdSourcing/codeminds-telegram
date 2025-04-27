@@ -81,7 +81,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ users });
   } catch (error) {
-    console.error('Error processing file:', error);
     return NextResponse.json(
       { error: 'Error processing file' },
       { status: 500 }

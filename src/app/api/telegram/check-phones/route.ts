@@ -73,7 +73,6 @@ export async function POST(request: Request) {
         try {
           // Clean the phone number
           const cleanPhone = phone.replace(/\D/g, '');
-          console.log('Checking phone:', cleanPhone); // Debug log
 
           // Check if the phone number exists in Telegram
           const result = await client!.invoke(
@@ -84,7 +83,6 @@ export async function POST(request: Request) {
 
           if (result?.users?.[0]) {
             const user = result.users[0] as Api.User;
-            console.log('Found user:', user); // Debug log
             return {
               phone,
               isFound: true,
@@ -94,14 +92,12 @@ export async function POST(request: Request) {
             };
           }
 
-          console.log('User not found for phone:', cleanPhone); // Debug log
           return {
             phone,
             isFound: false,
             error: 'User not found'
           };
         } catch (error) {
-          console.error(`Error checking phone ${phone}:`, error);
           return {
             phone,
             isFound: false,
@@ -113,7 +109,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ results });
   } catch (error) {
-    console.error('Error in check-phones:', error);
     return NextResponse.json(
       { error: 'Failed to check phones' },
       { status: 500 }

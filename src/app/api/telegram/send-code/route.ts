@@ -32,7 +32,7 @@ export async function POST(req: Request) {
 
     try {
       await client.connect();
-      
+
       // Send verification code
       const { phoneCodeHash } = await client.sendCode(
         {
@@ -54,8 +54,6 @@ export async function POST(req: Request) {
       await client.disconnect();
     }
   } catch (error: any) {
-    console.error('Error sending verification code:', error);
-
     // Handle flood wait error
     if (error.code === 420) {
       return NextResponse.json({

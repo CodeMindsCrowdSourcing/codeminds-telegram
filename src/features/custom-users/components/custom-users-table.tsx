@@ -112,7 +112,7 @@ function AddUserDialog({ onUserAdded }: { onUserAdded: (user: CustomUser) => voi
         <DialogHeader>
           <DialogTitle>Add New User</DialogTitle>
           <DialogDescription>
-            Enter the user's details below
+            Enter the users details below
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -488,12 +488,12 @@ export function CustomUsersTable({
   };
 
   const handleUserUpdated = (updatedUser: CustomUser) => {
-    setData(prev => prev.map(user => 
+    setData(prev => prev.map(user =>
       user._id === updatedUser._id ? updatedUser : user
     ));
   };
 
-  const tableColumns = columns({ 
+  const tableColumns = columns({
     onUserDeleted: handleUserDeleted,
     onUserUpdated: handleUserUpdated
   });
@@ -527,4 +527,4 @@ export function CustomUsersTable({
       <DataTable<CustomUser> table={table} />
     </div>
   );
-} 
+}

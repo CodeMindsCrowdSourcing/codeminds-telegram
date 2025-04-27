@@ -35,7 +35,6 @@ async function connectDB() {
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then(() => {
-      console.log('MongoDB connected successfully');
       return cached;
     });
   }
@@ -56,10 +55,8 @@ async function disconnectDB() {
       await mongoose.disconnect();
       cached.conn = null;
       cached.promise = null;
-      console.log('MongoDB disconnected successfully');
     }
   } catch (error) {
-    console.error('Error disconnecting from MongoDB:', error);
   }
 }
 

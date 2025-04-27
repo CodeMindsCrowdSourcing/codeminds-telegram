@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { auth } from "@clerk/nextjs/server";
 import connectDB from '@/lib/mongodb';
 import { CustomUserModel } from '@/models/custom-user';
@@ -8,10 +8,18 @@ import { TelegramClient } from 'telegram';
 import { StringSession } from 'telegram/sessions';
 import { Api } from 'telegram/tl';
 
+type RouteParams = {
+  params: Promise<{
+    id: string;
+  }>;
+};
+
 export async function POST(
-  req: Request,
-  { params }: { params: { id: string } }
+  _request: NextRequest,
+  context: RouteParams
 ) {
+  const { id } = await context.params;
+
   try {
     await connectDB();
     const { userId } = await auth();
@@ -40,7 +48,7 @@ export async function POST(
     }
 
     const customUser = await CustomUserModel.findOne({
-      _id: params.id,
+      _id: id,
       userId: user._id
     });
 
@@ -84,7 +92,7 @@ export async function POST(
       const telegramUser = isFound ? result.users[0] : null;
 
       const updatedUser = await CustomUserModel.findByIdAndUpdate(
-        params.id,
+        id,
         {
           isFound,
           error: isFound ? undefined : 'User not found in Telegram',
@@ -117,9 +125,11 @@ export async function POST(
       await client.disconnect();
     }
   } catch (error) {
-    console.error('Error checking user:', error);
     return NextResponse.json(
-      { error: 'Failed to check user' },
+      {
+        error: 'Failed to check user',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }

@@ -47,7 +47,6 @@ export async function POST(req: Request) {
       }
     });
   } catch (error) {
-    console.error('Error adding custom user:', error);
     return NextResponse.json(
       { error: 'Failed to add user' },
       { status: 500 }

@@ -1,14 +1,8 @@
 import {
-  ColumnDef,
   flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  useReactTable,
-  PaginationState,
   Table
 } from '@tanstack/react-table';
 import type * as React from 'react';
-import { useState } from 'react';
 
 import { DataTablePagination } from '@/components/ui/table/data-table-pagination';
 import {

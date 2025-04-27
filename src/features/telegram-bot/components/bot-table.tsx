@@ -161,7 +161,6 @@ function ActionCell({
       setPreviewUrl(data.url);
       toast.success('File uploaded successfully');
     } catch (error) {
-      console.error('Upload error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to upload file');
     } finally {
       setIsUploading(false);
