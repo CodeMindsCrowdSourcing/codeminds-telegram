@@ -8,6 +8,7 @@ interface ICustomUser extends Document {
   lastName?: string;
   isFound: boolean;
   error?: string;
+  chatId?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -38,6 +39,11 @@ const customUserSchema = new mongoose.Schema({
   error: {
     type: String,
   },
+  chatId: {
+    type: Number,
+    sparse: true,
+    index: true,
+  },
   createdAt: {
     type: Date,
     default: Date.now,
@@ -48,7 +54,8 @@ const customUserSchema = new mongoose.Schema({
   },
 });
 
-// Update the updatedAt field before saving
+customUserSchema.index({ userId: 1, phone: 1 }, { unique: true });
+
 customUserSchema.pre('save', function(this: ICustomUser, next: () => void) {
   this.updatedAt = new Date();
   next();

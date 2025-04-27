@@ -74,27 +74,30 @@ function AddUserDialog({ onUserAdded }: { onUserAdded: (user: CustomUser) => voi
         body: JSON.stringify(formData),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to add user');
+        if (response.status === 400) {
+          toast.error(data.error || 'Validation error');
+        } else {
+          toast.error('Failed to add user. Please try again.');
+        }
+        return;
       }
 
-      const data = await response.json();
-      if (data.success) {
-        toast.success('User added successfully');
-        setIsOpen(false);
-        setFormData({
-          phone: '',
-          username: '',
-          firstName: '',
-          lastName: '',
-          isFound: false
-        });
-        // Add new user to the table
-        onUserAdded(data.user);
-      }
+      toast.success('User added successfully');
+      setIsOpen(false);
+      setFormData({
+        phone: '',
+        username: '',
+        firstName: '',
+        lastName: '',
+        isFound: false
+      });
+      onUserAdded(data.user);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to add user');
+      console.error('Error adding user:', error);
+      toast.error('An unexpected error occurred');
     } finally {
       setIsLoading(false);
     }
@@ -174,44 +177,55 @@ function AddUserDialog({ onUserAdded }: { onUserAdded: (user: CustomUser) => voi
 }
 
 function SendMessageDialog({
-  user,
+  users,
   isOpen,
   onOpenChange
 }: {
-  user: CustomUser;
+  users: CustomUser[];
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const validUsers = users.filter(user => user.username);
 
   const handleSendMessage = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/custom-users/send-message', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: user._id,
-          message
-        }),
-      });
+      const results = await Promise.all(
+        validUsers.map(user =>
+          fetch('/api/custom-users/send-message', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              userId: user._id,
+              message
+            }),
+          })
+        )
+      );
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to send message');
+      const errors = [];
+      for (let i = 0; i < results.length; i++) {
+        const response = results[i];
+        const user = validUsers[i];
+        if (!response.ok) {
+          const error = await response.json();
+          errors.push(`Failed to send message to ${user.username}: ${error.error}`);
+        }
       }
 
-      const data = await response.json();
-      if (data.success) {
-        toast.success('Message sent successfully');
+      if (errors.length > 0) {
+        toast.error(`Some messages failed to send:\n${errors.join('\n')}`);
+      } else {
+        toast.success(`Messages sent successfully to ${validUsers.length} users`);
         onOpenChange(false);
         setMessage('');
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to send message');
+      toast.error(error instanceof Error ? error.message : 'Failed to send messages');
     } finally {
       setIsLoading(false);
     }
@@ -221,10 +235,24 @@ function SendMessageDialog({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Send Message</DialogTitle>
-          <DialogDescription>
-            Send a message to {user.username || user.phone}
-          </DialogDescription>
+          <DialogTitle>Send Message to Multiple Users</DialogTitle>
+          <div className="mt-2">
+            <div className="text-sm text-muted-foreground">
+              Sending message to {validUsers.length} users with Telegram usernames:
+            </div>
+            <div className="mt-2 text-sm">
+              {validUsers.map(user => (
+                <Badge key={user._id} variant="secondary" className="mr-2 mb-2">
+                  @{user.username}
+                </Badge>
+              ))}
+            </div>
+            {users.length !== validUsers.length && (
+              <div className="mt-2 text-yellow-500">
+                Note: {users.length - validUsers.length} selected users without usernames will be skipped
+              </div>
+            )}
+          </div>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
@@ -241,7 +269,7 @@ function SendMessageDialog({
           <Button
             onClick={handleSendMessage}
             className="w-full"
-            disabled={isLoading || !message.trim()}
+            disabled={isLoading || !message.trim() || validUsers.length === 0}
           >
             {isLoading ? (
               <>
@@ -249,7 +277,7 @@ function SendMessageDialog({
                 Sending...
               </>
             ) : (
-              'Send Message'
+              `Send Message to ${validUsers.length} Users`
             )}
           </Button>
         </div>
@@ -261,11 +289,13 @@ function SendMessageDialog({
 function ActionCell({
   user,
   onUserDeleted,
-  onUserUpdated
+  onUserUpdated,
+  onSendMessage
 }: {
   user: CustomUser;
   onUserDeleted: (userId: string) => void;
   onUserUpdated: (user: CustomUser) => void;
+  onSendMessage: (users: CustomUser[]) => void;
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isSendMessageOpen, setIsSendMessageOpen] = useState(false);
@@ -277,7 +307,7 @@ function ActionCell({
   };
 
   const handleSendMessage = () => {
-    setIsSendMessageOpen(true);
+    onSendMessage([user]);
   };
 
   const handleCheck = async () => {
@@ -376,7 +406,7 @@ function ActionCell({
       </DropdownMenu>
 
       <SendMessageDialog
-        user={user}
+        users={user ? [user] : []}
         isOpen={isSendMessageOpen}
         onOpenChange={setIsSendMessageOpen}
       />
@@ -386,10 +416,12 @@ function ActionCell({
 
 export const columns = ({
   onUserDeleted,
-  onUserUpdated
+  onUserUpdated,
+  onSendMessage
 }: {
   onUserDeleted: (userId: string) => void;
   onUserUpdated: (user: CustomUser) => void;
+  onSendMessage: (users: CustomUser[]) => void;
 }): ColumnDef<CustomUser>[] => [
   {
     id: 'select',
@@ -462,13 +494,13 @@ export const columns = ({
     cell: ({ row }) => {
       const date = row.getValue('createdAt');
       if (!(date instanceof Date) && !(typeof date === 'string')) return null;
-      return format(new Date(date), 'PPP');
+      return format(new Date(date), 'PP');
     }
   },
   {
     id: 'actions',
     cell: ({ row }) => (
-      <ActionCell user={row.original} onUserDeleted={onUserDeleted} onUserUpdated={onUserUpdated} />
+      <ActionCell user={row.original} onUserDeleted={onUserDeleted} onUserUpdated={onUserUpdated} onSendMessage={onSendMessage} />
     )
   }
 ];
@@ -478,6 +510,8 @@ export function CustomUsersTable({
   onExportUsers
 }: CustomUsersTableProps) {
   const [data, setData] = useState(initialData);
+  const [isSendMessageOpen, setIsSendMessageOpen] = useState(false);
+  const [selectedUsers, setSelectedUsers] = useState<CustomUser[]>([]);
 
   const handleUserAdded = (user: CustomUser) => {
     setData(prev => [user, ...prev]);
@@ -493,21 +527,47 @@ export function CustomUsersTable({
     ));
   };
 
+  const handleSendMessage = (users: CustomUser[]) => {
+    setSelectedUsers(users);
+    setIsSendMessageOpen(true);
+  };
+
   const tableColumns = columns({
     onUserDeleted: handleUserDeleted,
-    onUserUpdated: handleUserUpdated
+    onUserUpdated: handleUserUpdated,
+    onSendMessage: handleSendMessage
   });
   const table = useReactTable<CustomUser>({
     data,
     columns: tableColumns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    initialState: {
+      pagination: {
+        pageSize: 10,
+      },
+    },
   });
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between">
-        <AddUserDialog onUserAdded={handleUserAdded} />
+      <div className="flex flex-col sm:flex-row justify-between gap-4">
+        <div className="flex gap-2">
+          <AddUserDialog onUserAdded={handleUserAdded} />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const selectedRows = table.getSelectedRowModel().rows;
+              const selectedUsers = selectedRows.map(row => row.original);
+              handleSendMessage(selectedUsers);
+            }}
+            disabled={table.getSelectedRowModel().rows.length === 0}
+          >
+            <Send className="mr-2 h-4 w-4" />
+            Send Message to Selected
+          </Button>
+        </div>
         <Button
           variant="outline"
           size="sm"
@@ -524,7 +584,19 @@ export function CustomUsersTable({
           Export Selected
         </Button>
       </div>
-      <DataTable<CustomUser> table={table} />
+      <div className="rounded-md border">
+        <div className="relative w-full overflow-auto">
+          <div className="min-w-[800px]">
+            <DataTable<CustomUser> table={table} />
+          </div>
+        </div>
+      </div>
+
+      <SendMessageDialog
+        users={selectedUsers}
+        isOpen={isSendMessageOpen}
+        onOpenChange={setIsSendMessageOpen}
+      />
     </div>
   );
 }

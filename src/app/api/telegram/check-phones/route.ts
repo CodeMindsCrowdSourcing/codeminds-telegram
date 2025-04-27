@@ -6,6 +6,7 @@ import { TelegramSessionModel } from '@/models/telegram-session';
 import { ConnectionTCPFull } from 'telegram/network';
 import { Api } from 'telegram';
 import { connectDB, disconnectDB } from '@/lib/mongodb';
+import { CheckLimitsService } from '@/services/check-limits';
 
 if (!process.env.TELEGRAM_API_ID || !process.env.TELEGRAM_API_HASH) {
   throw new Error('TELEGRAM_API_ID and TELEGRAM_API_HASH must be set');
@@ -25,6 +26,27 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: 'Phones must be an array' },
         { status: 400 }
+      );
+    }
+
+    // Validate batch size
+    const batchValidation = CheckLimitsService.validateBatchSize(phones.length);
+    if (!batchValidation.isValid) {
+      return NextResponse.json(
+        { error: batchValidation.error },
+        { status: 400 }
+      );
+    }
+
+    // Check rate limits
+    const checkResult = await CheckLimitsService.canCheck(userId);
+    if (!checkResult.canCheck) {
+      return NextResponse.json(
+        { 
+          error: checkResult.error,
+          timeToWait: checkResult.timeToWait 
+        },
+        { status: 429 }
       );
     }
 
@@ -67,48 +89,62 @@ export async function POST(request: Request) {
       await client.connect();
     }
 
-    // Check each phone number
-    const results = await Promise.all(
-      phones.map(async (phone) => {
-        try {
-          // Clean the phone number
-          const cleanPhone = phone.replace(/\D/g, '');
+    // Process phones through the CheckLimitsService
+    const processResult = await CheckLimitsService.processBatch(
+      phones,
+      userId,
+      async (phoneBatch) => {
+        return Promise.all(
+          phoneBatch.map(async (phone) => {
+            try {
+              // Clean the phone number
+              const cleanPhone = phone.replace(/\D/g, '');
 
-          // Check if the phone number exists in Telegram
-          const result = await client!.invoke(
-            new Api.contacts.ResolvePhone({
-              phone: cleanPhone
-            })
-          );
+              // Check if the phone number exists in Telegram
+              const result = await client!.invoke(
+                new Api.contacts.ResolvePhone({
+                  phone: cleanPhone
+                })
+              );
 
-          if (result?.users?.[0]) {
-            const user = result.users[0] as Api.User;
-            return {
-              phone,
-              isFound: true,
-              username: user.username || '',
-              firstName: user.firstName || '',
-              lastName: user.lastName || ''
-            };
-          }
+              if (result?.users?.[0]) {
+                const user = result.users[0] as Api.User;
+                return {
+                  phone,
+                  isFound: true,
+                  username: user.username || '',
+                  firstName: user.firstName || '',
+                  lastName: user.lastName || ''
+                };
+              }
 
-          return {
-            phone,
-            isFound: false,
-            error: 'User not found'
-          };
-        } catch (error) {
-          return {
-            phone,
-            isFound: false,
-            error: (error as Error).message || 'Failed to check phone'
-          };
-        }
-      })
+              return {
+                phone,
+                isFound: false,
+                error: 'User not found'
+              };
+            } catch (error) {
+              return {
+                phone,
+                isFound: false,
+                error: (error as Error).message || 'Failed to check phone'
+              };
+            }
+          })
+        );
+      }
     );
 
-    return NextResponse.json({ results });
+    if (!processResult.success) {
+      return NextResponse.json(
+        { error: processResult.error },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json({ results: processResult.results });
   } catch (error) {
+    console.error('Failed to check phones:', error);
     return NextResponse.json(
       { error: 'Failed to check phones' },
       { status: 500 }

@@ -41,6 +41,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import Image from 'next/image';
 
 interface BotTableProps {
   data: TelegramBot[];
@@ -266,7 +267,7 @@ function ActionCell({
                 <Label>Preview</Label>
                 <div className='relative aspect-video w-full overflow-hidden rounded-lg border'>
                   {editData.mediaType === 'image' ? (
-                    <img
+                    <Image
                       src={previewUrl}
                       alt="Preview"
                       className="h-full w-full object-cover"
