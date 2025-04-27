@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Heading } from '@/components/ui/heading';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
@@ -31,6 +31,11 @@ export default function WalletPage() {
   const [amount, setAmount] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [tonConnectUI] = useTonConnectUI();
+  const [isConnected, setIsConnected] = useState(false);
+
+  useEffect(() => {
+    setIsConnected(tonConnectUI.connected);
+  }, [tonConnectUI.connected]);
 
   const RECIPIENT_ADDRESS = 'UQCziv0RCs8IH-o3ts_ifD-dFO6y3NrJ8yas4erEATXW0S_N';
 
@@ -82,7 +87,7 @@ export default function WalletPage() {
           description='Manage your TON wallet and funds'
         />
         <div className='flex items-center gap-4'>
-          {tonConnectUI.connected ? (
+          {isConnected ? (
             <>
               <Button variant='outline'>
                 {tonConnectUI.account?.address.slice(0, 6)}...
@@ -134,7 +139,7 @@ export default function WalletPage() {
       </div>
       <Separator />
       <div className='min-h-[400px] flex-1'>
-        {tonConnectUI.connected ? (
+        {isConnected ? (
           <div className='space-y-4'>
             <div className='rounded-lg border p-4'>
               <h3 className='text-lg font-medium'>Wallet Info</h3>

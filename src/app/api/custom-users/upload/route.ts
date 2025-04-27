@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { parse } from 'csv-parse/sync';
 import { CustomUser } from '@/types/custom-user';
+import { connectDB, disconnectDB } from '@/lib/mongodb';
 
 function formatPhoneNumber(phone: string): string {
   // Remove all non-digit characters
@@ -28,6 +29,7 @@ function isValidPhoneNumber(phone: string): boolean {
 
 export async function POST(request: Request) {
   try {
+    await connectDB();
     const formData = await request.formData();
     const file = formData.get('file') as File;
 
@@ -79,9 +81,12 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ users });
   } catch (error) {
+    console.error('Error processing file:', error);
     return NextResponse.json(
       { error: 'Error processing file' },
       { status: 500 }
     );
+  } finally {
+    await disconnectDB();
   }
 }
