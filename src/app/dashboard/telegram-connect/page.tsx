@@ -26,7 +26,7 @@ export default function TelegramConnectPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ phone }),
+        body: JSON.stringify({ phoneNumber: phone }),
       });
 
       if (response.ok) {

@@ -7,14 +7,6 @@ declare global {
   };
 }
 
-const MONGODB_URI = process.env.MONGODB_URI;
-
-if (!MONGODB_URI) {
-  throw new Error(
-    'Please define the MONGODB_URI environment variable inside .env'
-  );
-}
-
 let cached = global.mongoose;
 
 if (!cached) {
@@ -22,16 +14,28 @@ if (!cached) {
 }
 
 async function connectDB() {
+  const MONGODB_URI = process.env.MONGODB_URI;
+
+  if (!MONGODB_URI) {
+    throw new Error(
+      'Please define the MONGODB_URI environment variable inside .env.local'
+    );
+  }
+
   if (cached.conn) {
     return cached.conn;
   }
 
   if (!cached.promise) {
     const opts = {
-      bufferCommands: false
+      bufferCommands: false,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+      family: 4 // Use IPv4, skip trying IPv6
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI!, opts).then(() => {
+    cached.promise = mongoose.connect(MONGODB_URI, opts).then(() => {
+      console.log('MongoDB connected successfully');
       return cached;
     });
   }
@@ -52,6 +56,7 @@ async function disconnectDB() {
       await mongoose.disconnect();
       cached.conn = null;
       cached.promise = null;
+      console.log('MongoDB disconnected successfully');
     }
   } catch (error) {
     console.error('Error disconnecting from MongoDB:', error);

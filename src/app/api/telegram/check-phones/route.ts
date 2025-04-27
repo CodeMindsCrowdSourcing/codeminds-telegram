@@ -43,14 +43,15 @@ export async function POST(request: Request) {
     }
 
     // Initialize Telegram client with the saved session
+    const stringSession = new StringSession(session.sessionString);
     client = new TelegramClient(
-      new StringSession(session.sessionString),
+      stringSession,
       Number(process.env.TELEGRAM_API_ID),
       process.env.TELEGRAM_API_HASH as string,
       {
         connectionRetries: 5,
         useWSS: true,
-        testServers: true,
+        testServers: session.isTestMode,
         connection: ConnectionTCPFull,
         deviceModel: 'Desktop',
         systemVersion: 'Windows 10',
