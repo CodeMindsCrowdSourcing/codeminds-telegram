@@ -46,4 +46,18 @@ async function connectDB() {
   return cached.conn;
 }
 
+async function disconnectDB() {
+  try {
+    if (cached.conn) {
+      await mongoose.disconnect();
+      cached.conn = null;
+      cached.promise = null;
+    }
+  } catch (error) {
+    console.error('Error disconnecting from MongoDB:', error);
+  }
+}
+
+// Export both as default and named exports for backward compatibility
+export { connectDB, disconnectDB };
 export default connectDB;
