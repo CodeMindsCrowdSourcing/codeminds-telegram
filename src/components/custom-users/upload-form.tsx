@@ -7,6 +7,8 @@ import { DataTable } from "@/components/ui/table/data-table";
 import { toast } from "sonner";
 import { columns } from "@/app/dashboard/custom-users/columns";
 import { useReactTable, getCoreRowModel, getPaginationRowModel } from "@tanstack/react-table";
+import { Button } from "@/components/ui/button";
+import { Save } from "lucide-react";
 
 type UploadFormProps = {
   isConnected: boolean;
@@ -14,6 +16,7 @@ type UploadFormProps = {
 
 export function UploadForm({ isConnected }: UploadFormProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [results, setResults] = useState<any[]>([]);
 
   const table = useReactTable({
@@ -75,6 +78,37 @@ export function UploadForm({ isConnected }: UploadFormProps) {
     }
   };
 
+  const handleSaveUsers = async () => {
+    try {
+      setIsSaving(true);
+      const foundUsers = results.filter(user => user.isFound);
+
+      if (foundUsers.length === 0) {
+        toast.error('No found users to save');
+        return;
+      }
+
+      const response = await fetch('/api/custom-users/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ users: foundUsers })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save users');
+      }
+
+      const data = await response.json();
+      toast.success(`Saved ${data.saved} users, skipped ${data.skipped} duplicates`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to save users');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <form className="space-y-4">
@@ -99,9 +133,21 @@ export function UploadForm({ isConnected }: UploadFormProps) {
       </form>
 
       {results.length > 0 && (
-        <div className="rounded-lg border bg-card">
-          <div className="overflow-x-auto">
-            <DataTable table={table} />
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-medium">Results</h3>
+            <Button
+              onClick={handleSaveUsers}
+              disabled={isSaving || !results.some(user => user.isFound)}
+            >
+              <Save className="mr-2 h-4 w-4" />
+              {isSaving ? 'Saving...' : 'Save Found Users'}
+            </Button>
+          </div>
+          <div className="rounded-lg border bg-card">
+            <div className="overflow-x-auto">
+              <DataTable table={table} />
+            </div>
           </div>
         </div>
       )}

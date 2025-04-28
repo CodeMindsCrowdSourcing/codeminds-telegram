@@ -1,7 +1,7 @@
 import mongoose, { Document } from 'mongoose';
 
 interface ICheckLimits extends Document {
-  userId: mongoose.Types.ObjectId;
+  userId: string;
   dailyChecks: number;
   lastCheckTime: Date;
   lastResetDate: Date;
@@ -9,8 +9,7 @@ interface ICheckLimits extends Document {
 
 const checkLimitsSchema = new mongoose.Schema({
   userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    type: String,
     required: true,
     unique: true
   },

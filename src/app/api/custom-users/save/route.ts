@@ -1,13 +1,30 @@
 import { NextResponse } from 'next/server';
-import { TelegramUserModel } from '@/models/telegram-user';
-import { TelegramBotModel } from '@/models/telegram-bot';
-import { CustomUser } from '@/types/custom-user';
-import connectToDatabase from '@/lib/mongodb';
+import { auth } from "@clerk/nextjs/server";
+import { CustomUserModel } from '@/models/custom-user';
+import { UserModel } from '@/models/user';
+import connectDB from '@/lib/mongodb';
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
-    const { users } = await request.json() as { users: CustomUser[] };
+    await connectDB();
+    const { userId } = await auth();
 
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const user = await UserModel.findOne({ clerkId: userId });
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    const { users } = await req.json();
     if (!Array.isArray(users)) {
       return NextResponse.json(
         { error: 'Invalid users data' },
@@ -15,51 +32,45 @@ export async function POST(request: Request) {
       );
     }
 
-    await connectToDatabase();
+    // Filter out users that are already in the database
+    const existingUsers = await CustomUserModel.find({
+      userId: user._id,
+      phone: { $in: users.map(u => u.phone) }
+    });
 
-    // Get the first active bot
-    const bot = await TelegramBotModel.findOne({ isRunning: true });
-    if (!bot) {
-      return NextResponse.json(
-        { error: 'No active bot found' },
-        { status: 400 }
-      );
+    const existingPhones = new Set(existingUsers.map(u => u.phone));
+    const newUsers = users.filter(u => !existingPhones.has(u.phone));
+
+    if (newUsers.length === 0) {
+      return NextResponse.json({
+        success: true,
+        message: 'No new users to save',
+        saved: 0,
+        skipped: existingUsers.length
+      });
     }
 
-    // Save only found users
-    const foundUsers = users.filter(user => user.isFound);
-
-    // Save users to database
-    const savedUsers = await Promise.all(
-      foundUsers.map(async (user) => {
-        const telegramUser = await TelegramUserModel.findOneAndUpdate(
-          { botId: bot._id, userId: user.phone },
-          {
-            botId: bot._id,
-            userId: user.phone,
-            username: user.username,
-            firstName: user.firstName,
-            lastName: user.lastName
-          },
-          { upsert: true, new: true }
-        );
-
-        // Update bot's users array
-        await TelegramBotModel.findByIdAndUpdate(bot._id, {
-          $addToSet: { users: telegramUser._id }
-        });
-
-        return telegramUser;
-      })
+    // Save new users
+    const savedUsers = await CustomUserModel.insertMany(
+      newUsers.map(u => ({
+        ...u,
+        userId: user._id
+      }))
     );
 
     return NextResponse.json({
+      success: true,
       message: 'Users saved successfully',
-      count: savedUsers.length
+      saved: savedUsers.length,
+      skipped: existingUsers.length
     });
   } catch (error) {
+    console.error('Error saving users:', error);
     return NextResponse.json(
-      { error: 'Error saving users' },
+      { 
+        error: 'Failed to save users',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }

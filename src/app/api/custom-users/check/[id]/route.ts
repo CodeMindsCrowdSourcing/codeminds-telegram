@@ -39,7 +39,7 @@ export async function POST(
       );
     }
 
-    const session = await TelegramSessionModel.findOne({ userId });
+    const session = await TelegramSessionModel.findOne({ userId: userId.toString() });
     if (!session) {
       return NextResponse.json(
         { error: 'Telegram session not found' },
@@ -61,13 +61,13 @@ export async function POST(
 
     // Create Telegram client with test mode configuration
     const client = new TelegramClient(
-      new StringSession(session.session),
-      parseInt(session.apiId),
-      session.apiHash,
+      new StringSession(session.sessionString),
+      Number(process.env.TELEGRAM_API_ID),
+      process.env.TELEGRAM_API_HASH as string,
       {
         connectionRetries: 5,
         useWSS: true,
-        testServers: session.isTestMode,
+        testServers: true
       }
     );
 
@@ -125,6 +125,7 @@ export async function POST(
       await client.disconnect();
     }
   } catch (error) {
+    console.error('Error checking user:', error);
     return NextResponse.json(
       {
         error: 'Failed to check user',

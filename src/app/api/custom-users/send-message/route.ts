@@ -3,9 +3,13 @@ import { auth } from "@clerk/nextjs/server";
 import { CustomUserModel } from '@/models/custom-user';
 import { UserModel } from '@/models/user';
 import { TelegramSessionModel } from '@/models/telegram-session';
+import { TelegramClient } from 'telegram';
+import { StringSession } from 'telegram/sessions';
 import connectDB from '@/lib/mongodb';
 
 export async function POST(req: Request) {
+  let client: TelegramClient | null = null;
+
   try {
     await connectDB();
     const { userId } = await auth();
@@ -25,7 +29,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const session = await TelegramSessionModel.findOne({ userId });
+    const session = await TelegramSessionModel.findOne({ userId: userId.toString() });
     if (!session) {
       return NextResponse.json(
         { error: 'Telegram session not found' },
@@ -33,7 +37,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { userId: customUserId } = await req.json();
+    const { userId: customUserId, message } = await req.json();
     const customUser = await CustomUserModel.findOne({
       _id: customUserId,
       userId: user._id
@@ -46,18 +50,46 @@ export async function POST(req: Request) {
       );
     }
 
-    // TODO: Implement actual message sending using Telegram API
-    // For now, we'll just simulate success
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    if (!customUser.username) {
+      return NextResponse.json(
+        { error: 'User has no Telegram username' },
+        { status: 400 }
+      );
+    }
+
+    // Create Telegram client
+    client = new TelegramClient(
+      new StringSession(session.sessionString),
+      Number(process.env.TELEGRAM_API_ID),
+      process.env.TELEGRAM_API_HASH as string,
+      {
+        connectionRetries: 5,
+        useWSS: true,
+        testServers: true
+      }
+    );
+
+    await client.connect();
+
+    // Send message
+    await client.sendMessage(customUser.username, { message });
 
     return NextResponse.json({
       success: true,
       message: 'Message sent successfully'
     });
   } catch (error) {
+    console.error('Error sending message:', error);
     return NextResponse.json(
-      { error: 'Failed to send message' },
+      { 
+        error: 'Failed to send message',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
+  } finally {
+    if (client?.connected) {
+      await client.disconnect();
+    }
   }
 }

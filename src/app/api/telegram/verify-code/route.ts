@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { TelegramClient } from 'telegram';
 import { StringSession } from 'telegram/sessions';
+import { connectDB } from '@/lib/mongodb';
+import { TelegramSessionModel } from '@/models/telegram-session';
 
 export async function POST(req: Request) {
   try {
@@ -47,20 +49,18 @@ export async function POST(req: Request) {
       // Get the new session string after successful auth
       const newSessionString = client.session.save();
 
-      // Save session to database
-      const saveResponse = await fetch('/api/telegram/save-session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      // Connect to MongoDB and save session
+      await connectDB();
+      await TelegramSessionModel.findOneAndUpdate(
+        { userId },
+        {
+          userId,
+          phone: phoneNumber,
           sessionString: newSessionString,
-        }),
-      });
-
-      if (!saveResponse.ok) {
-        throw new Error('Failed to save session');
-      }
+          updatedAt: new Date()
+        },
+        { upsert: true, new: true }
+      );
 
       return NextResponse.json({
         success: true,

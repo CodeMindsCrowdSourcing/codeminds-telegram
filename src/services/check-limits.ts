@@ -1,22 +1,24 @@
 import { CheckLimitsModel } from '@/models/check-limits';
 import { Types } from 'mongoose';
+import connectDB from '@/lib/mongodb';
 
 const DAILY_LIMIT = 100;
 const MIN_CHECK_INTERVAL = 2000; // 2 seconds in milliseconds
 const BATCH_SIZE = 50;
 
 export class CheckLimitsService {
-  static async canCheck(userId: string | Types.ObjectId): Promise<{ 
+  static async canCheck(userId: string): Promise<{ 
     canCheck: boolean; 
     error?: string;
     timeToWait?: number;
   }> {
     try {
-      const userLimits = await CheckLimitsModel.findOne({ userId });
+      await connectDB();
+      const userLimits = await CheckLimitsModel.findOne({ userId: userId.toString() });
       
       if (!userLimits) {
         // First time checking, create new limits
-        await CheckLimitsModel.create({ userId });
+        await CheckLimitsModel.create({ userId: userId.toString() });
         return { canCheck: true };
       }
 
@@ -52,10 +54,11 @@ export class CheckLimitsService {
     }
   }
 
-  static async incrementChecks(userId: string | Types.ObjectId): Promise<void> {
+  static async incrementChecks(userId: string): Promise<void> {
     try {
+      await connectDB();
       await CheckLimitsModel.findOneAndUpdate(
-        { userId },
+        { userId: userId.toString() },
         {
           $inc: { dailyChecks: 1 },
           lastCheckTime: new Date()
@@ -82,7 +85,7 @@ export class CheckLimitsService {
 
   static async processBatch(
     phones: string[], 
-    userId: string | Types.ObjectId,
+    userId: string,
     processFunction: (phones: string[]) => Promise<any>
   ): Promise<{ success: boolean; error?: string; results?: any }> {
     // Validate batch size

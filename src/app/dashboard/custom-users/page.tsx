@@ -60,9 +60,9 @@ export default async function CustomUsersPage() {
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="container mx-auto py-6 space-y-6 p-3">
       <h1 className="text-2xl font-bold">Custom Users</h1>
-      
+
       {!isConnected && (
         <Alert>
           <AlertCircle className="h-4 w-4" />

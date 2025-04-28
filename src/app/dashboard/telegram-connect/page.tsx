@@ -14,6 +14,8 @@ export default function TelegramConnectPage() {
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
+  const [phoneCodeHash, setPhoneCodeHash] = useState('');
+  const [sessionString, setSessionString] = useState('');
 
   const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,6 +32,9 @@ export default function TelegramConnectPage() {
       });
 
       if (response.ok) {
+        const data = await response.json();
+        setPhoneCodeHash(data.phoneCodeHash);
+        setSessionString(data.sessionString);
         setStep('code');
         toast.success('Code sent successfully');
       } else {
@@ -54,7 +59,12 @@ export default function TelegramConnectPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ phone, code }),
+        body: JSON.stringify({ 
+          phoneNumber: phone, 
+          phoneCode: code,
+          phoneCodeHash,
+          sessionString
+        }),
       });
 
       if (response.ok) {
