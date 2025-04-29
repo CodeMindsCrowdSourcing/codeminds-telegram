@@ -8,7 +8,9 @@ import { toast } from "sonner";
 import { columns } from "@/app/dashboard/custom-users/columns";
 import { useReactTable, getCoreRowModel, getPaginationRowModel } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
-import { Save } from "lucide-react";
+import { Save, Trash2, Loader2 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
 
 type UploadFormProps = {
   isConnected: boolean;
@@ -16,8 +18,11 @@ type UploadFormProps = {
 
 export function UploadForm({ isConnected }: UploadFormProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [results, setResults] = useState<any[]>([]);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [file, setFile] = useState<File | null>(null);
+  const [processedRows, setProcessedRows] = useState(0);
+  const [totalRows, setTotalRows] = useState(0);
 
   const table = useReactTable({
     data: results,
@@ -32,15 +37,19 @@ export function UploadForm({ isConnected }: UploadFormProps) {
   });
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile) return;
+
+    setFile(selectedFile);
+    setUploadProgress(0);
+    setResults([]);
+    setProcessedRows(0);
+    setTotalRows(0);
+    setIsLoading(true);
 
     try {
-      setIsLoading(true);
-
-      // First, parse the CSV file
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', selectedFile);
 
       const response = await fetch('/api/custom-users/upload', {
         method: 'POST',
@@ -48,64 +57,33 @@ export function UploadForm({ isConnected }: UploadFormProps) {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to parse CSV file');
-      }
-
-      const { users } = await response.json();
-
-      // Then, check each phone number with Telegram
-      const checkResponse = await fetch('/api/telegram/check-phones', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          phones: users.map((u: any) => u.phone)
-        })
-      });
-
-      if (!checkResponse.ok) {
-        throw new Error('Failed to check phone numbers');
-      }
-
-      const { results } = await checkResponse.json();
-      setResults(results);
-      toast.success('Phone numbers checked successfully');
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to process file');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSaveUsers = async () => {
-    try {
-      setIsSaving(true);
-      const foundUsers = results.filter(user => user.isFound);
-
-      if (foundUsers.length === 0) {
-        toast.error('No found users to save');
-        return;
-      }
-
-      const response = await fetch('/api/custom-users/save', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ users: foundUsers })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save users');
+        throw new Error('Failed to upload file');
       }
 
       const data = await response.json();
-      toast.success(`Saved ${data.saved} users, skipped ${data.skipped} duplicates`);
+      setTotalRows(data.users.length);
+      
+      // Simulate progressive loading of results
+      const batchSize = 20;
+      for (let i = 0; i < data.users.length; i += batchSize) {
+        const batch = data.users.slice(0, i + batchSize);
+        setResults(batch);
+        setProcessedRows(i + batchSize);
+        setUploadProgress(Math.round((i + batchSize) / data.users.length * 100));
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+      
+      setResults(data.users);
+      setUploadProgress(100);
+      toast.success(
+        `Uploaded ${data.stats.new} new users, skipped ${data.stats.duplicates} duplicates`
+      );
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to save users');
+      console.error('Upload error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to upload file');
+      setFile(null);
     } finally {
-      setIsSaving(false);
+      setIsLoading(false);
     }
   };
 
@@ -132,22 +110,43 @@ export function UploadForm({ isConnected }: UploadFormProps) {
         </div>
       </form>
 
+      {isLoading && (
+        <div className="space-y-2">
+          <Progress value={uploadProgress} />
+          <p className="text-sm text-muted-foreground text-center">
+            {uploadProgress < 100 ? (
+              `Uploading file... ${uploadProgress}%`
+            ) : (
+              `Processing rows... ${processedRows}/${totalRows}`
+            )}
+          </p>
+        </div>
+      )}
+
       {results.length > 0 && (
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-medium">Results</h3>
-            <Button
-              onClick={handleSaveUsers}
-              disabled={isSaving || !results.some(user => user.isFound)}
-            >
-              <Save className="mr-2 h-4 w-4" />
-              {isSaving ? 'Saving...' : 'Save Found Users'}
-            </Button>
           </div>
-          <div className="rounded-lg border bg-card">
-            <div className="overflow-x-auto">
+          <div className="rounded-lg border bg-card relative">
+            <div className={cn(
+              "overflow-x-auto transition-all duration-200",
+              isLoading && "blur-sm pointer-events-none"
+            )}>
               <DataTable table={table} />
             </div>
+            {isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm">
+                <div className="text-center space-y-4 p-4">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+                  <p className="text-sm font-medium">
+                    Processing large file, please wait...
+                    <br />
+                    {processedRows}/{totalRows} rows
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

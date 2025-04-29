@@ -4,7 +4,6 @@ import {
 } from '@tanstack/react-table';
 import type * as React from 'react';
 
-import { DataTablePagination } from '@/components/ui/table/data-table-pagination';
 import {
   Table as TableComponent,
   TableBody,
@@ -85,9 +84,6 @@ export function DataTable<TData>({
             )}
           </TableBody>
         </TableComponent>
-      </div>
-      <div className="mt-4">
-        <DataTablePagination table={table} />
       </div>
     </div>
   );

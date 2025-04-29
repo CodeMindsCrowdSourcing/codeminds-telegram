@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import { parse } from 'csv-parse/sync';
 import { CustomUser } from '@/types/custom-user';
-import { connectDB, disconnectDB } from '@/lib/mongodb';
+import { connectDB } from '@/lib/mongodb';
+import { CustomUserModel } from '@/models/custom-user';
+import { UserModel } from '@/models/user';
+import { auth } from "@clerk/nextjs/server";
 
 function formatPhoneNumber(phone: string): string {
   // Remove all non-digit characters
@@ -30,6 +33,23 @@ function isValidPhoneNumber(phone: string): boolean {
 export async function POST(request: Request) {
   try {
     await connectDB();
+    const { userId } = await auth();
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const user = await UserModel.findOne({ clerkId: userId });
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
     const formData = await request.formData();
     const file = formData.get('file') as File;
 
@@ -51,8 +71,8 @@ export async function POST(request: Request) {
       skip_empty_lines: true
     });
 
-    // Process phone numbers
-    const users: CustomUser[] = records.map((record: any) => {
+    // Process phone numbers and create users
+    const users = records.map((record: any) => {
       const rawPhone = record.phone?.toString().trim();
       if (!rawPhone) {
         return {
@@ -72,20 +92,46 @@ export async function POST(request: Request) {
         };
       }
 
-      // If we get here, the phone number is valid
       return {
         phone,
-        isFound: true
+        isFound: false,
+        userId: user._id
       };
     });
 
-    return NextResponse.json({ users });
+    // Find existing users
+    const existingUsers = await CustomUserModel.find({
+      userId: user._id,
+      phone: { $in: users.map((u: { phone: string }) => u.phone) }
+    });
+
+    const existingPhones = new Set(existingUsers.map((u: { phone: string }) => u.phone));
+    const newUsers = users.filter((u: { phone: string }) => !existingPhones.has(u.phone));
+
+    // Save only new users
+    const savedUsers = await CustomUserModel.insertMany(newUsers, { ordered: false });
+
+    return NextResponse.json({ 
+      success: true,
+      users: savedUsers.map(user => ({
+        _id: user._id.toString(),
+        phone: user.phone,
+        isFound: user.isFound,
+        error: user.error,
+        createdAt: user.createdAt.toISOString(),
+        updatedAt: user.updatedAt.toISOString()
+      })),
+      stats: {
+        total: users.length,
+        new: savedUsers.length,
+        duplicates: existingUsers.length
+      }
+    });
   } catch (error) {
+    console.error('Error processing file:', error);
     return NextResponse.json(
       { error: 'Error processing file' },
       { status: 500 }
     );
-  } finally {
-    await disconnectDB();
   }
 }
