@@ -74,21 +74,14 @@ export async function POST(
     await client.connect();
 
     try {
-      // Check if user exists in Telegram
+      // Check if user exists in Telegram using ResolvePhone
       const result = await client.invoke(
-        new Api.contacts.ImportContacts({
-          contacts: [
-            new Api.InputPhoneContact({
-              clientId: BigInt(0) as any,
-              phone: customUser.phone,
-              firstName: customUser.firstName || '',
-              lastName: customUser.lastName || '',
-            }),
-          ],
+        new Api.contacts.ResolvePhone({
+          phone: customUser.phone.replace(/\D/g, '')
         })
       );
 
-      const isFound = result.users.length > 0;
+      const isFound = result?.users?.[0] ? true : false;
       const telegramUser = isFound ? result.users[0] : null;
 
       const updatedUser = await CustomUserModel.findByIdAndUpdate(
