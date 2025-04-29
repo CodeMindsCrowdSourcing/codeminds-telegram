@@ -67,7 +67,9 @@ export async function POST(req: Request) {
         message: 'Successfully signed in'
       });
     } finally {
-      await client.disconnect();
+      if (client.connected) {
+        await client.destroy();
+      }
     }
   } catch (error: any) {
     console.error('Error verifying code:', error);

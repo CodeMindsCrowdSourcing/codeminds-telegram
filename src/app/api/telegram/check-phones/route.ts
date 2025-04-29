@@ -153,7 +153,7 @@ export async function POST(request: Request) {
     // Ensure both Telegram and MongoDB connections are closed
     try {
       if (client?.connected) {
-        await client.disconnect();
+        await client.destroy();
         client = null;
       }
       await disconnectDB();

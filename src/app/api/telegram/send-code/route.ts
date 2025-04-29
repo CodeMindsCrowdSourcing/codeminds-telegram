@@ -51,7 +51,9 @@ export async function POST(req: Request) {
         sessionString
       });
     } finally {
-      await client.disconnect();
+      if (client.connected) {
+        await client.destroy();
+      }
     }
   } catch (error: any) {
     // Handle flood wait error
