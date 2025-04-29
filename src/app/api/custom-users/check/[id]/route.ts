@@ -122,7 +122,9 @@ export async function POST(
         }
       });
     } finally {
-      await client.disconnect();
+      if (client.connected) {
+        await client.destroy();
+      }
     }
   } catch (error) {
     console.error('Error checking user:', error);

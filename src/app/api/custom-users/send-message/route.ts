@@ -71,25 +71,27 @@ export async function POST(req: Request) {
 
     await client.connect();
 
-    // Send message
-    await client.sendMessage(customUser.username, { message });
+    try {
+      // Send message
+      await client.sendMessage(customUser.username, { message });
 
-    return NextResponse.json({
-      success: true,
-      message: 'Message sent successfully'
-    });
+      return NextResponse.json({
+        success: true,
+        message: 'Message sent successfully'
+      });
+    } finally {
+      if (client.connected) {
+        await client.destroy();
+      }
+    }
   } catch (error) {
     console.error('Error sending message:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to send message',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
     );
-  } finally {
-    if (client?.connected) {
-      await client.disconnect();
-    }
   }
 }
