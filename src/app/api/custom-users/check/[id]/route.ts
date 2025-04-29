@@ -114,6 +114,35 @@ export async function POST(
           updatedAt: updatedUser.updatedAt.toISOString()
         }
       });
+    } catch (error: any) {
+      // Handle specific Telegram API errors
+      if (error.errorMessage === 'PHONE_NOT_OCCUPIED') {
+        const updatedUser = await CustomUserModel.findByIdAndUpdate(
+          id,
+          {
+            isFound: false,
+            error: 'This phone number is not registered on Telegram',
+          },
+          { new: true }
+        );
+
+        return NextResponse.json({
+          success: true,
+          user: {
+            _id: updatedUser._id.toString(),
+            phone: updatedUser.phone,
+            username: updatedUser.username,
+            firstName: updatedUser.firstName,
+            lastName: updatedUser.lastName,
+            isFound: updatedUser.isFound,
+            error: updatedUser.error,
+            createdAt: updatedUser.createdAt.toISOString(),
+            updatedAt: updatedUser.updatedAt.toISOString()
+          }
+        });
+      }
+
+      throw error; // Re-throw other errors
     } finally {
       if (client.connected) {
         await client.destroy();
