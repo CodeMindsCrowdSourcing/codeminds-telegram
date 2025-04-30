@@ -1,55 +1,31 @@
 import { NextResponse } from 'next/server';
-import { auth } from "@clerk/nextjs/server";
-import { CustomUserModel } from '@/models/custom-user';
-import { UserModel } from '@/models/user';
 import connectDB from '@/lib/mongodb';
+import { CustomUserModel } from '@/models/custom-user';
 
-export async function POST(req: Request) {
+export async function POST(request: Request) {
   try {
-    await connectDB();
-    const { userId } = await auth();
+    const { userIds } = await request.json();
 
-    if (!userId) {
+    if (!Array.isArray(userIds) || userIds.length === 0) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    const user = await UserModel.findOne({ clerkId: userId });
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
-
-    const { userIds } = await req.json();
-    if (!Array.isArray(userIds)) {
-      return NextResponse.json(
-        { error: 'Invalid user IDs' },
+        { error: 'Invalid user IDs provided' },
         { status: 400 }
       );
     }
 
+    await connectDB();
     const result = await CustomUserModel.deleteMany({
-      _id: { $in: userIds },
-      userId: user._id
+      _id: { $in: userIds }
     });
 
     return NextResponse.json({
-      success: true,
-      message: 'Users deleted successfully',
       deleted: result.deletedCount
     });
   } catch (error) {
     console.error('Error deleting users:', error);
     return NextResponse.json(
-      { 
-        error: 'Failed to delete users',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
+      { error: 'Failed to delete users' },
       { status: 500 }
     );
   }
-} 
+}

@@ -9,6 +9,7 @@ interface ICustomUser extends Document {
   isFound: boolean;
   error?: string;
   chatId?: number;
+  checked?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -17,48 +18,54 @@ const customUserSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
+    required: true
   },
   phone: {
     type: String,
-    required: true,
+    required: true
   },
   username: {
-    type: String,
+    type: String
   },
   firstName: {
-    type: String,
+    type: String
   },
   lastName: {
-    type: String,
+    type: String
   },
   isFound: {
     type: Boolean,
-    default: false,
+    default: false
   },
   error: {
-    type: String,
+    type: String
   },
   chatId: {
     type: Number,
     sparse: true,
-    index: true,
+    index: true
+  },
+  checked: {
+    type: Boolean,
+    default: false
   },
   createdAt: {
     type: Date,
-    default: Date.now,
+    default: Date.now
   },
   updatedAt: {
     type: Date,
-    default: Date.now,
-  },
+    default: Date.now
+  }
 });
 
 customUserSchema.index({ userId: 1, phone: 1 }, { unique: true });
 
-customUserSchema.pre('save', function(this: ICustomUser, next: () => void) {
+customUserSchema.pre('save', function (this: ICustomUser, next: () => void) {
   this.updatedAt = new Date();
   next();
 });
 
-export const CustomUserModel = mongoose.models.CustomUser || mongoose.model<ICustomUser>('CustomUser', customUserSchema); 
+export const CustomUserModel =
+  mongoose.models.CustomUser ||
+  mongoose.model<ICustomUser>('CustomUser', customUserSchema);

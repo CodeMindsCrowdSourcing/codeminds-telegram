@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from "@clerk/nextjs/server";
+import { auth } from '@clerk/nextjs/server';
 import connectDB from '@/lib/mongodb';
 import { CustomUserModel } from '@/models/custom-user';
 import { UserModel } from '@/models/user';
@@ -14,10 +14,7 @@ type RouteParams = {
   }>;
 };
 
-export async function POST(
-  _request: NextRequest,
-  context: RouteParams
-) {
+export async function POST(_request: NextRequest, context: RouteParams) {
   const { id } = await context.params;
 
   try {
@@ -25,21 +22,17 @@ export async function POST(
     const { userId } = await auth();
 
     if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const user = await UserModel.findOne({ clerkId: userId });
     if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const session = await TelegramSessionModel.findOne({ userId: userId.toString() });
+    const session = await TelegramSessionModel.findOne({
+      userId: userId.toString()
+    });
     if (!session) {
       return NextResponse.json(
         { error: 'Telegram session not found' },
@@ -89,9 +82,19 @@ export async function POST(
         {
           isFound,
           error: isFound ? undefined : 'User not found in Telegram',
-          username: isFound && telegramUser && 'username' in telegramUser ? telegramUser.username : undefined,
-          firstName: isFound && telegramUser && 'firstName' in telegramUser ? telegramUser.firstName : undefined,
-          lastName: isFound && telegramUser && 'lastName' in telegramUser ? telegramUser.lastName : undefined,
+          username:
+            isFound && telegramUser && 'username' in telegramUser
+              ? telegramUser.username
+              : undefined,
+          firstName:
+            isFound && telegramUser && 'firstName' in telegramUser
+              ? telegramUser.firstName
+              : undefined,
+          lastName:
+            isFound && telegramUser && 'lastName' in telegramUser
+              ? telegramUser.lastName
+              : undefined,
+          checked: true
         },
         { new: true }
       );
@@ -110,6 +113,7 @@ export async function POST(
           lastName: updatedUser.lastName,
           isFound: updatedUser.isFound,
           error: updatedUser.error,
+          checked: updatedUser.checked,
           createdAt: updatedUser.createdAt.toISOString(),
           updatedAt: updatedUser.updatedAt.toISOString()
         }
@@ -122,6 +126,7 @@ export async function POST(
           {
             isFound: false,
             error: 'This phone number is not registered on Telegram',
+            checked: true
           },
           { new: true }
         );
@@ -136,6 +141,7 @@ export async function POST(
             lastName: updatedUser.lastName,
             isFound: updatedUser.isFound,
             error: updatedUser.error,
+            checked: updatedUser.checked,
             createdAt: updatedUser.createdAt.toISOString(),
             updatedAt: updatedUser.updatedAt.toISOString()
           }
