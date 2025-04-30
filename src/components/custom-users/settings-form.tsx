@@ -13,12 +13,19 @@ export function SettingsForm() {
     }
     return '30';
   });
+  const [delayTime, setDelayTime] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('verificationDelayTime') || '180';
+    }
+    return '180';
+  });
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async () => {
     try {
       setIsSaving(true);
       const size = parseInt(batchSize);
+      const delay = parseInt(delayTime);
 
       if (isNaN(size) || size < 1) {
         toast.error('Please enter a valid batch size');
@@ -30,7 +37,13 @@ export function SettingsForm() {
         return;
       }
 
+      if (isNaN(delay) || delay < 0) {
+        toast.error('Please enter a valid delay time');
+        return;
+      }
+
       localStorage.setItem('verificationBatchSize', batchSize);
+      localStorage.setItem('verificationDelayTime', delayTime);
       toast.success('Settings saved successfully');
     } catch (error) {
       toast.error('Failed to save settings');
@@ -60,6 +73,27 @@ export function SettingsForm() {
         </div>
         <p className='text-muted-foreground text-sm'>
           Number of users to check in each batch (1-100)
+        </p>
+      </div>
+
+      <div className='space-y-2'>
+        <Label htmlFor='delayTime'>Delay Time (seconds)</Label>
+        <div className='flex gap-2'>
+          <Input
+            id='delayTime'
+            type='number'
+            min='0'
+            value={delayTime}
+            onChange={(e) => setDelayTime(e.target.value)}
+            placeholder='Enter delay time'
+            className='max-w-[200px]'
+          />
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving ? 'Saving...' : 'Save'}
+          </Button>
+        </div>
+        <p className='text-muted-foreground text-sm'>
+          Time to wait between batches in seconds (0 or more)
         </p>
       </div>
     </div>

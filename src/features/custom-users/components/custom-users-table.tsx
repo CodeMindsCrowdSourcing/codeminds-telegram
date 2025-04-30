@@ -75,6 +75,7 @@ interface CustomUser {
 interface CustomUsersTableProps {
   data: CustomUser[];
   onExportUsers?: (users: CustomUser[]) => Promise<void>;
+  onSelectedUsersChange?: (users: CustomUser[]) => void;
 }
 
 function AddUserDialog({
@@ -656,13 +657,15 @@ const BATCH_DELAY = 180000; // 3 minutes in milliseconds
 
 export function CustomUsersTable({
   data: initialData,
-  onExportUsers
+  onExportUsers,
+  onSelectedUsersChange
 }: CustomUsersTableProps) {
   const [data, setData] = useState(initialData);
   const [isSendMessageOpen, setIsSendMessageOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<CustomUser[]>([]);
+  const [rowSelection, setRowSelection] = useState({});
   const [isChecking, setIsChecking] = useState(false);
   const [checkProgress, setCheckProgress] = useState({
     total: 0,
@@ -672,6 +675,7 @@ export function CustomUsersTable({
   const [shouldContinueChecking, setShouldContinueChecking] = useState(true);
   const abortControllerRef = useRef<AbortController | null>(null);
   const [waitTimeLeft, setWaitTimeLeft] = useState<number | null>(null);
+  const isCheckingRef = useRef(false);
 
   const getBatchSize = () => {
     if (typeof window !== 'undefined') {
@@ -679,6 +683,14 @@ export function CustomUsersTable({
       return savedSize ? parseInt(savedSize) : 30;
     }
     return 30;
+  };
+
+  const getDelayTime = () => {
+    if (typeof window !== 'undefined') {
+      const savedDelay = localStorage.getItem('verificationDelayTime');
+      return savedDelay ? parseInt(savedDelay) * 1000 : 180000; // Convert to milliseconds
+    }
+    return 180000;
   };
 
   const formatTime = (seconds: number) => {
@@ -736,112 +748,46 @@ export function CustomUsersTable({
     setIsSendMessageOpen(true);
   };
 
-  const checkBatch = async (users: CustomUser[]) => {
-    if (!shouldContinueChecking) {
-      setIsChecking(false);
-      return;
+  const handleStopChecking = () => {
+    isCheckingRef.current = false;
+    setShouldContinueChecking(false);
+    setWaitTimeLeft(null);
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsChecking(false);
+    setCheckProgress({
+      total: 0,
+      checked: 0,
+      found: 0
+    });
+    localStorage.removeItem('checkingState');
+    toast.info('Check stopped');
+  };
+
+  const checkSingleUser = async (user: CustomUser, controller: AbortController) => {
+    if (!isCheckingRef.current) {
+      throw new Error('Check stopped by user');
     }
 
     try {
-      const controller = new AbortController();
-      abortControllerRef.current = controller;
-
-      // Фильтруем только непроверенных пользователей
-      const uncheckedUsers = users.filter((user) => !user.checked);
-
-      const results = await Promise.all(
-        uncheckedUsers.map(async (user) => {
-          if (!shouldContinueChecking) {
-            controller.abort();
-            throw new Error('Check stopped by user');
-          }
-
-          try {
-            const response = await fetch(
-              `/api/custom-users/check/${user._id}`,
-              {
-                method: 'POST',
-                signal: controller.signal
-              }
-            );
-            const data = await response.json();
-            return data;
-          } catch (error) {
-            if (error instanceof Error && error.name === 'AbortError') {
-              throw new Error('Check stopped by user');
-            }
-            console.error('Error checking user:', error);
-            return null;
-          }
-        })
-      ).catch((error) => {
-        if (
-          error instanceof Error &&
-          error.message === 'Check stopped by user'
-        ) {
-          return [];
-        }
-        throw error;
+      const response = await fetch(`/api/custom-users/check/${user._id}`, {
+        method: 'POST',
+        signal: controller.signal
       });
 
-      if (!shouldContinueChecking) {
+      if (!isCheckingRef.current) {
         throw new Error('Check stopped by user');
       }
 
-      const validResults = results.filter((result) => result && result.success);
-      validResults.forEach((result) => {
-        handleUserUpdated(result.user);
-        if (result.user.isFound) {
-          setCheckProgress(
-            (prev: { total: number; checked: number; found: number }) => ({
-              ...prev,
-              found: prev.found + 1
-            })
-          );
-        }
-      });
-
-      setCheckProgress(
-        (prev: { total: number; checked: number; found: number }) => ({
-          ...prev,
-          checked: prev.checked + users.length
-        })
-      );
-
-      const floodError = results.find(
-        (result) =>
-          result?.error?.includes('FloodWaitError') ||
-          result?.error?.includes('FLOOD')
-      );
-
-      if (floodError) {
-        const seconds = floodError.seconds || 180;
-        const waitTime = (seconds + 10) * 1000;
-        setWaitTimeLeft(Math.ceil(waitTime / 1000));
-        toast.info(
-          `Rate limit reached. Waiting ${Math.ceil(waitTime / 1000)} seconds before next batch...`
-        );
-
-        let waitStartTime = Date.now();
-        while (Date.now() - waitStartTime < waitTime) {
-          if (!shouldContinueChecking) {
-            setWaitTimeLeft(null);
-            throw new Error('Check stopped by user');
-          }
-          const timeLeft = Math.ceil(
-            (waitTime - (Date.now() - waitStartTime)) / 1000
-          );
-          setWaitTimeLeft(timeLeft);
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-        }
-        setWaitTimeLeft(null);
-      }
+      const data = await response.json();
+      return data;
     } catch (error) {
-      if (error instanceof Error && error.message === 'Check stopped by user') {
-        throw error;
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Check stopped by user');
       }
-      console.error('Batch check error:', error);
-      toast.error('Error checking batch, continuing with next batch...');
+      throw error;
     }
   };
 
@@ -852,6 +798,8 @@ export function CustomUsersTable({
       return;
     }
 
+    // Reset state
+    isCheckingRef.current = true;
     setShouldContinueChecking(true);
     setIsChecking(true);
     setCheckProgress({
@@ -860,83 +808,115 @@ export function CustomUsersTable({
       found: 0
     });
 
+    // Create new abort controller
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     try {
       const batchSize = getBatchSize();
-      const batches = [];
-      for (let i = 0; i < notFoundUsers.length; i += batchSize) {
-        batches.push(notFoundUsers.slice(i, i + batchSize));
-      }
+      const delayTime = getDelayTime();
 
-      for (const batch of batches) {
-        if (!shouldContinueChecking) {
-          setWaitTimeLeft(null);
-          localStorage.removeItem('checkingState');
+      for (let i = 0; i < notFoundUsers.length; i += batchSize) {
+        if (!isCheckingRef.current) {
           break;
         }
 
-        try {
-          await checkBatch(batch);
+        const batch = notFoundUsers.slice(i, i + batchSize);
+        const results = await Promise.all(
+          batch.map((user) => checkSingleUser(user, controller))
+        );
 
-          if (
-            batches.indexOf(batch) < batches.length - 1 &&
-            shouldContinueChecking
-          ) {
-            const delaySeconds = Math.ceil(BATCH_DELAY / 1000);
-            setWaitTimeLeft(delaySeconds);
-            toast.info(`Waiting ${delaySeconds} seconds before next batch...`);
+        if (!isCheckingRef.current) {
+          break;
+        }
 
-            let waitStartTime = Date.now();
-            while (Date.now() - waitStartTime < BATCH_DELAY) {
-              if (!shouldContinueChecking) {
-                setWaitTimeLeft(null);
-                localStorage.removeItem('checkingState');
-                break;
-              }
-              const timeLeft = Math.ceil(
-                (BATCH_DELAY - (Date.now() - waitStartTime)) / 1000
-              );
-              setWaitTimeLeft(timeLeft);
-              await new Promise((resolve) => setTimeout(resolve, 1000));
+        // Process results
+        const validResults = results.filter((result) => result && result.success);
+        for (const result of validResults) {
+          if (!isCheckingRef.current) break;
+          handleUserUpdated(result.user);
+          if (result.user.isFound) {
+            setCheckProgress((prev) => ({
+              ...prev,
+              found: prev.found + 1
+            }));
+          }
+        }
+
+        setCheckProgress((prev) => ({
+          ...prev,
+          checked: prev.checked + batch.length
+        }));
+
+        // Check for flood error
+        const floodError = results.find(
+          (result) =>
+            result?.error?.includes('FloodWaitError') ||
+            result?.error?.includes('FLOOD')
+        );
+
+        if (floodError) {
+          const seconds = floodError.seconds || 180;
+          const waitTime = (seconds + 10) * 1000;
+          setWaitTimeLeft(Math.ceil(waitTime / 1000));
+          toast.info(
+            `Rate limit reached. Waiting ${Math.ceil(waitTime / 1000)} seconds before next batch...`
+          );
+
+          let waitStartTime = Date.now();
+          while (Date.now() - waitStartTime < waitTime) {
+            if (!isCheckingRef.current) {
+              setWaitTimeLeft(null);
+              break;
             }
-            setWaitTimeLeft(null);
+            const timeLeft = Math.ceil(
+              (waitTime - (Date.now() - waitStartTime)) / 1000
+            );
+            setWaitTimeLeft(timeLeft);
+            await new Promise((resolve) => setTimeout(resolve, 1000));
           }
-        } catch (error) {
           setWaitTimeLeft(null);
-          if (
-            error instanceof Error &&
-            error.message === 'Check stopped by user'
-          ) {
-            localStorage.removeItem('checkingState');
-            break;
+        }
+
+        // Add delay between batches if not the last batch
+        if (i + batchSize < notFoundUsers.length && isCheckingRef.current) {
+          const delaySeconds = Math.ceil(delayTime / 1000);
+          setWaitTimeLeft(delaySeconds);
+          toast.info(`Waiting ${delaySeconds} seconds before next batch...`);
+
+          let waitStartTime = Date.now();
+          while (Date.now() - waitStartTime < delayTime) {
+            if (!isCheckingRef.current) {
+              setWaitTimeLeft(null);
+              break;
+            }
+            const timeLeft = Math.ceil(
+              (delayTime - (Date.now() - waitStartTime)) / 1000
+            );
+            setWaitTimeLeft(timeLeft);
+            await new Promise((resolve) => setTimeout(resolve, 1000));
           }
-          throw error;
+          setWaitTimeLeft(null);
         }
       }
     } catch (error) {
-      setWaitTimeLeft(null);
-      console.error('Check process error:', error);
-      toast.error('Error in check process');
+      if (error instanceof Error && error.message === 'Check stopped by user') {
+        // Process was stopped intentionally
+      } else {
+        console.error('Check process error:', error);
+        toast.error('Error in check process');
+      }
     } finally {
+      isCheckingRef.current = false;
       setWaitTimeLeft(null);
       setIsChecking(false);
       setShouldContinueChecking(false);
-      abortControllerRef.current = null;
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
       localStorage.removeItem('checkingState');
     }
-  };
-
-  const handleStopChecking = () => {
-    setShouldContinueChecking(false);
-    setWaitTimeLeft(null);
-    abortControllerRef.current?.abort();
-    setIsChecking(false);
-    setCheckProgress({
-      total: 0,
-      checked: 0,
-      found: 0
-    });
-    localStorage.removeItem('checkingState');
-    toast.info('Check stopped');
   };
 
   const handleDeleteSelected = async () => {
@@ -1038,6 +1018,11 @@ export function CustomUsersTable({
     columns: tableColumns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    state: {
+      rowSelection
+    },
+    enableRowSelection: true,
+    onRowSelectionChange: setRowSelection,
     initialState: {
       pagination: {
         pageSize: 10
@@ -1045,12 +1030,22 @@ export function CustomUsersTable({
     }
   });
 
+  // Update selectedUsers when rowSelection changes
+  useEffect(() => {
+    const selectedRows = table.getSelectedRowModel().rows;
+    const selectedUsers = selectedRows.map((row) => row.original);
+    setSelectedUsers(selectedUsers);
+    if (onSelectedUsersChange) {
+      onSelectedUsersChange(selectedUsers);
+    }
+  }, [rowSelection, table, onSelectedUsersChange]);
+
   return (
     <div className='space-y-4'>
       <div className='flex flex-wrap gap-4'>
         <div className='flex items-center gap-2'>
           <AddUserDialog onUserAdded={handleUserAdded} />
-          {isChecking ? (
+          {isChecking && (
             <div className='flex items-center gap-2'>
               <Button variant='destructive' onClick={handleStopChecking}>
                 <Search className='mr-2 h-4 w-4' />
@@ -1062,66 +1057,74 @@ export function CustomUsersTable({
                 </span>
               )}
             </div>
-          ) : (
-            <>
-              <Button
-                variant='outline'
-                onClick={handleCheckNotFound}
-                disabled={!data.some((user) => !user.isFound && !user.checked)}
-              >
-                <Search className='mr-2 h-4 w-4' />
-                Check Not Found
-              </Button>
-              <Button
-                variant='destructive'
-                onClick={handleDeleteCheckedNotFound}
-                disabled={!data.some((user) => user.checked && !user.isFound)}
-              >
-                <Trash2 className='mr-2 h-4 w-4' />
-                Delete Checked Not Found
-              </Button>
-            </>
           )}
         </div>
 
-        <div className='flex items-center gap-2'>
-          <Button
-            variant='secondary'
-            onClick={() => {
-              const selectedRows = table.getSelectedRowModel().rows;
-              const selectedUsers = selectedRows.map((row) => row.original);
-              handleSendMessage(selectedUsers);
-            }}
-            disabled={table.getSelectedRowModel().rows.length === 0}
-          >
-            <Send className='mr-2 h-4 w-4' />
-            Message Selected ({table.getSelectedRowModel().rows.length})
-          </Button>
-          <Button
-            variant='destructive'
-            onClick={handleDeleteSelected}
-            disabled={table.getSelectedRowModel().rows.length === 0}
-          >
-            <Trash2 className='mr-2 h-4 w-4' />
-            Delete Selected ({table.getSelectedRowModel().rows.length})
-          </Button>
-        </div>
-
         <div className='ml-auto flex items-center gap-2'>
-          <Button
-            variant='outline'
-            onClick={() => {
-              const selectedRows = table.getSelectedRowModel().rows;
-              const selectedUsers = selectedRows.map((row) => row.original);
-              if (onExportUsers) {
-                onExportUsers(selectedUsers);
-              }
-            }}
-            disabled={table.getSelectedRowModel().rows.length === 0}
-          >
-            <Download className='mr-2 h-4 w-4' />
-            Export Selected ({table.getSelectedRowModel().rows.length})
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="flex items-center gap-2">
+                <MoreHorizontal className="h-4 w-4" />
+                Actions
+                <span className="ml-2 text-sm text-muted-foreground">
+                  ({table.getSelectedRowModel().rows.length} selected)
+                </span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[200px]">
+              <DropdownMenuItem
+                onClick={handleCheckNotFound}
+                disabled={!data.some((user) => !user.isFound && !user.checked)}
+                className="flex items-center gap-2"
+              >
+                <Search className="h-4 w-4" />
+                Check Not Found
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  const selectedRows = table.getSelectedRowModel().rows;
+                  const selectedUsers = selectedRows.map((row) => row.original);
+                  handleSendMessage(selectedUsers);
+                }}
+                disabled={table.getSelectedRowModel().rows.length === 0}
+                className="flex items-center gap-2"
+              >
+                <Send className="h-4 w-4" />
+                Message Selected
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={handleDeleteSelected}
+                disabled={table.getSelectedRowModel().rows.length === 0}
+                className="flex items-center gap-2 text-red-600"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete Selected
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={handleDeleteCheckedNotFound}
+                disabled={!data.some((user) => user.checked && !user.isFound)}
+                className="flex items-center gap-2 text-red-600"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete Checked Not Found
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  const selectedRows = table.getSelectedRowModel().rows;
+                  const selectedUsers = selectedRows.map((row) => row.original);
+                  if (onExportUsers) {
+                    onExportUsers(selectedUsers);
+                  }
+                }}
+                disabled={table.getSelectedRowModel().rows.length === 0}
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Export Selected
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
