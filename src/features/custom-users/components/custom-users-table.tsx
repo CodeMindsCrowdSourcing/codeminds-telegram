@@ -7,7 +7,15 @@ import {
   useReactTable
 } from '@tanstack/react-table';
 import { format } from 'date-fns';
-import { MoreHorizontal, Trash2, Download, Plus, MessageSquare, Send, Search } from 'lucide-react';
+import {
+  MoreHorizontal,
+  Trash2,
+  Download,
+  Plus,
+  MessageSquare,
+  Send,
+  Search
+} from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -34,7 +42,22 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DataTablePagination } from '@/components/ui/table/data-table-pagination';
-import { CheckProgress } from "@/components/custom-users/check-progress";
+import { CheckProgress } from '@/components/custom-users/check-progress';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle, Info } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@/components/ui/tooltip';
 
 interface CustomUser {
   _id: string;
@@ -44,6 +67,7 @@ interface CustomUser {
   lastName?: string;
   isFound: boolean;
   error?: string;
+  checked?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -53,7 +77,11 @@ interface CustomUsersTableProps {
   onExportUsers?: (users: CustomUser[]) => Promise<void>;
 }
 
-function AddUserDialog({ onUserAdded }: { onUserAdded: (user: CustomUser) => void }) {
+function AddUserDialog({
+  onUserAdded
+}: {
+  onUserAdded: (user: CustomUser) => void;
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -71,9 +99,9 @@ function AddUserDialog({ onUserAdded }: { onUserAdded: (user: CustomUser) => voi
       const response = await fetch('/api/custom-users', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(formData)
       });
 
       const data = await response.json();
@@ -109,63 +137,69 @@ function AddUserDialog({ onUserAdded }: { onUserAdded: (user: CustomUser) => voi
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button>
-          <Plus className="mr-2 h-4 w-4" />
+          <Plus className='mr-2 h-4 w-4' />
           Add User
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add New User</DialogTitle>
-          <DialogDescription>
-            Enter the users details below
-          </DialogDescription>
+          <DialogDescription>Enter the users details below</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="phone">Phone Number</Label>
+        <form onSubmit={handleSubmit} className='space-y-4'>
+          <div className='space-y-2'>
+            <Label htmlFor='phone'>Phone Number</Label>
             <Input
-              id="phone"
+              id='phone'
               value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              placeholder="Enter phone number"
+              onChange={(e) =>
+                setFormData({ ...formData, phone: e.target.value })
+              }
+              placeholder='Enter phone number'
               required
               disabled={isLoading}
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="username">Username</Label>
+          <div className='space-y-2'>
+            <Label htmlFor='username'>Username</Label>
             <Input
-              id="username"
+              id='username'
               value={formData.username}
-              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-              placeholder="Enter username"
+              onChange={(e) =>
+                setFormData({ ...formData, username: e.target.value })
+              }
+              placeholder='Enter username'
               disabled={isLoading}
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="firstName">First Name</Label>
+          <div className='space-y-2'>
+            <Label htmlFor='firstName'>First Name</Label>
             <Input
-              id="firstName"
+              id='firstName'
               value={formData.firstName}
-              onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-              placeholder="Enter first name"
+              onChange={(e) =>
+                setFormData({ ...formData, firstName: e.target.value })
+              }
+              placeholder='Enter first name'
               disabled={isLoading}
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="lastName">Last Name</Label>
+          <div className='space-y-2'>
+            <Label htmlFor='lastName'>Last Name</Label>
             <Input
-              id="lastName"
+              id='lastName'
               value={formData.lastName}
-              onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-              placeholder="Enter last name"
+              onChange={(e) =>
+                setFormData({ ...formData, lastName: e.target.value })
+              }
+              placeholder='Enter last name'
               disabled={isLoading}
             />
           </div>
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <Button type='submit' className='w-full' disabled={isLoading}>
             {isLoading ? (
               <>
-                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                <div className='mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent' />
                 Adding...
               </>
             ) : (
@@ -189,22 +223,22 @@ function SendMessageDialog({
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
-  const validUsers = users.filter(user => user.username);
+  const validUsers = users.filter((user) => user.username);
 
   const handleSendMessage = async () => {
     try {
       setIsLoading(true);
       const results = await Promise.all(
-        validUsers.map(user =>
+        validUsers.map((user) =>
           fetch('/api/custom-users/send-message', {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json',
+              'Content-Type': 'application/json'
             },
             body: JSON.stringify({
               userId: user._id,
               message
-            }),
+            })
           })
         )
       );
@@ -215,19 +249,25 @@ function SendMessageDialog({
         const user = validUsers[i];
         if (!response.ok) {
           const error = await response.json();
-          errors.push(`Failed to send message to ${user.username}: ${error.error}`);
+          errors.push(
+            `Failed to send message to ${user.username}: ${error.error}`
+          );
         }
       }
 
       if (errors.length > 0) {
         toast.error(`Some messages failed to send:\n${errors.join('\n')}`);
       } else {
-        toast.success(`Messages sent successfully to ${validUsers.length} users`);
+        toast.success(
+          `Messages sent successfully to ${validUsers.length} users`
+        );
         onOpenChange(false);
         setMessage('');
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to send messages');
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to send messages'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -238,44 +278,46 @@ function SendMessageDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Send Message to Multiple Users</DialogTitle>
-          <div className="mt-2">
-            <div className="text-sm text-muted-foreground">
-              Sending message to {validUsers.length} users with Telegram usernames:
+          <div className='mt-2'>
+            <div className='text-muted-foreground text-sm'>
+              Sending message to {validUsers.length} users with Telegram
+              usernames:
             </div>
-            <div className="mt-2 text-sm">
-              {validUsers.map(user => (
-                <Badge key={user._id} variant="secondary" className="mr-2 mb-2">
+            <div className='mt-2 text-sm'>
+              {validUsers.map((user) => (
+                <Badge key={user._id} variant='secondary' className='mr-2 mb-2'>
                   @{user.username}
                 </Badge>
               ))}
             </div>
             {users.length !== validUsers.length && (
-              <div className="mt-2 text-yellow-500">
-                Note: {users.length - validUsers.length} selected users without usernames will be skipped
+              <div className='mt-2 text-yellow-500'>
+                Note: {users.length - validUsers.length} selected users without
+                usernames will be skipped
               </div>
             )}
           </div>
         </DialogHeader>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="message">Message</Label>
+        <div className='space-y-4'>
+          <div className='space-y-2'>
+            <Label htmlFor='message'>Message</Label>
             <textarea
-              id="message"
+              id='message'
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Enter your message"
-              className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              placeholder='Enter your message'
+              className='border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring min-h-[100px] w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50'
               disabled={isLoading}
             />
           </div>
           <Button
             onClick={handleSendMessage}
-            className="w-full"
+            className='w-full'
             disabled={isLoading || !message.trim() || validUsers.length === 0}
           >
             {isLoading ? (
               <>
-                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                <div className='mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent' />
                 Sending...
               </>
             ) : (
@@ -315,22 +357,29 @@ function ActionCell({
   const handleCheck = async () => {
     try {
       setIsLoading(true);
+
+      // Проверяем, был ли пользователь уже проверен
+      if (user.checked) {
+        toast.error('This user has already been checked');
+        return;
+      }
+
       const response = await fetch(`/api/custom-users/check/${user._id}`, {
-        method: 'POST',
+        method: 'POST'
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to check user');
+        throw new Error(data.error || 'Failed to check user');
       }
 
-      const data = await response.json();
-      if (data.success) {
-        toast.success('User checked successfully');
-        onUserUpdated(data.user);
-      }
+      toast.success('User checked successfully');
+      onUserUpdated(data.user);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to check user');
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to check user'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -340,7 +389,7 @@ function ActionCell({
     try {
       setIsLoading(true);
       const response = await fetch(`/api/custom-users/${user._id}`, {
-        method: 'DELETE',
+        method: 'DELETE'
       });
 
       if (!response.ok) {
@@ -354,7 +403,9 @@ function ActionCell({
         onUserDeleted(user._id);
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to delete user');
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to delete user'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -371,10 +422,7 @@ function ActionCell({
         </DropdownMenuTrigger>
         <DropdownMenuContent align='end'>
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-          <DropdownMenuItem
-            onClick={handleCheck}
-            disabled={isLoading}
-          >
+          <DropdownMenuItem onClick={handleCheck} disabled={isLoading}>
             <Search className='mr-2 h-4 w-4' />
             {isLoading ? 'Checking...' : 'Check'}
           </DropdownMenuItem>
@@ -397,10 +445,7 @@ function ActionCell({
             Copy phone
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onClick={handleDelete}
-            disabled={isLoading}
-          >
+          <DropdownMenuItem onClick={handleDelete} disabled={isLoading}>
             <Trash2 className='mr-2 h-4 w-4' />
             {isLoading ? 'Deleting...' : 'Delete'}
           </DropdownMenuItem>
@@ -435,21 +480,26 @@ function DeleteConfirmationDialog({
         <DialogHeader>
           <DialogTitle>Delete Users</DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete {selectedCount} users? This action cannot be undone.
+            Are you sure you want to delete {selectedCount} users? This action
+            cannot be undone.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex justify-end space-x-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
+        <div className='flex justify-end space-x-2'>
+          <Button
+            variant='outline'
+            onClick={() => onOpenChange(false)}
+            disabled={isLoading}
+          >
             Cancel
           </Button>
-          <Button 
-            variant="destructive" 
+          <Button
+            variant='destructive'
             onClick={onConfirm}
             disabled={isLoading}
           >
             {isLoading ? (
               <>
-                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                <div className='mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent' />
                 Deleting...
               </>
             ) : (
@@ -529,10 +579,54 @@ export const columns = ({
     header: 'Status',
     cell: ({ row }) => {
       const isFound = row.getValue('isFound') as boolean;
+      const checked = row.original.checked;
+
+      if (!checked) {
+        return <Badge variant='secondary'>Not Checked</Badge>;
+      }
+
       return (
         <Badge variant={isFound ? 'default' : 'destructive'}>
           {isFound ? 'Found' : 'Not Found'}
         </Badge>
+      );
+    }
+  },
+  {
+    accessorKey: 'checked',
+    header: 'Checked',
+    cell: ({ row }) => {
+      const checked = row.getValue('checked') as boolean;
+      return (
+        <Badge variant={checked ? 'default' : 'secondary'}>
+          {checked ? 'Yes' : 'No'}
+        </Badge>
+      );
+    }
+  },
+  {
+    accessorKey: 'error',
+    header: 'Error',
+    cell: ({ row }) => {
+      const error = row.getValue('error') as string;
+      if (!error) return '-';
+
+      // Сокращаем ошибку до первых 20 символов
+      const shortError =
+        error.length > 20 ? error.substring(0, 20) + '...' : error;
+
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger className='flex items-center gap-1'>
+              <span className='text-destructive text-sm'>{shortError}</span>
+              <Info className='text-muted-foreground h-4 w-4' />
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className='max-w-[300px] whitespace-normal'>{error}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       );
     }
   },
@@ -548,12 +642,16 @@ export const columns = ({
   {
     id: 'actions',
     cell: ({ row }) => (
-      <ActionCell user={row.original} onUserDeleted={onUserDeleted} onUserUpdated={onUserUpdated} onSendMessage={onSendMessage} />
+      <ActionCell
+        user={row.original}
+        onUserDeleted={onUserDeleted}
+        onUserUpdated={onUserUpdated}
+        onSendMessage={onSendMessage}
+      />
     )
   }
 ];
 
-const BATCH_SIZE = 30;
 const BATCH_DELAY = 180000; // 3 minutes in milliseconds
 
 export function CustomUsersTable({
@@ -574,6 +672,14 @@ export function CustomUsersTable({
   const [shouldContinueChecking, setShouldContinueChecking] = useState(true);
   const abortControllerRef = useRef<AbortController | null>(null);
   const [waitTimeLeft, setWaitTimeLeft] = useState<number | null>(null);
+
+  const getBatchSize = () => {
+    if (typeof window !== 'undefined') {
+      const savedSize = localStorage.getItem('verificationBatchSize');
+      return savedSize ? parseInt(savedSize) : 30;
+    }
+    return 30;
+  };
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -599,27 +705,30 @@ export function CustomUsersTable({
 
   useEffect(() => {
     if (isChecking && shouldContinueChecking) {
-      localStorage.setItem('checkingState', JSON.stringify({
-        isChecking,
-        progress: checkProgress
-      }));
+      localStorage.setItem(
+        'checkingState',
+        JSON.stringify({
+          isChecking,
+          progress: checkProgress
+        })
+      );
     } else {
       localStorage.removeItem('checkingState');
     }
   }, [isChecking, checkProgress, shouldContinueChecking]);
 
   const handleUserAdded = (user: CustomUser) => {
-    setData(prev => [user, ...prev]);
+    setData((prev) => [user, ...prev]);
   };
 
   const handleUserDeleted = (userId: string) => {
-    setData(prev => prev.filter(user => user._id !== userId));
+    setData((prev) => prev.filter((user) => user._id !== userId));
   };
 
   const handleUserUpdated = (updatedUser: CustomUser) => {
-    setData(prev => prev.map(user =>
-      user._id === updatedUser._id ? updatedUser : user
-    ));
+    setData((prev) =>
+      prev.map((user) => (user._id === updatedUser._id ? updatedUser : user))
+    );
   };
 
   const handleSendMessage = (users: CustomUser[]) => {
@@ -637,18 +746,24 @@ export function CustomUsersTable({
       const controller = new AbortController();
       abortControllerRef.current = controller;
 
+      // Фильтруем только непроверенных пользователей
+      const uncheckedUsers = users.filter((user) => !user.checked);
+
       const results = await Promise.all(
-        users.map(async user => {
+        uncheckedUsers.map(async (user) => {
           if (!shouldContinueChecking) {
             controller.abort();
             throw new Error('Check stopped by user');
           }
 
           try {
-            const response = await fetch(`/api/custom-users/check/${user._id}`, {
-              method: 'POST',
-              signal: controller.signal
-            });
+            const response = await fetch(
+              `/api/custom-users/check/${user._id}`,
+              {
+                method: 'POST',
+                signal: controller.signal
+              }
+            );
             const data = await response.json();
             return data;
           } catch (error) {
@@ -659,8 +774,11 @@ export function CustomUsersTable({
             return null;
           }
         })
-      ).catch(error => {
-        if (error instanceof Error && error.message === 'Check stopped by user') {
+      ).catch((error) => {
+        if (
+          error instanceof Error &&
+          error.message === 'Check stopped by user'
+        ) {
           return [];
         }
         throw error;
@@ -670,46 +788,54 @@ export function CustomUsersTable({
         throw new Error('Check stopped by user');
       }
 
-      const validResults = results.filter(result => result && result.success);
-      validResults.forEach(result => {
+      const validResults = results.filter((result) => result && result.success);
+      validResults.forEach((result) => {
         handleUserUpdated(result.user);
         if (result.user.isFound) {
-          setCheckProgress((prev: { total: number; checked: number; found: number }) => ({
-            ...prev,
-            found: prev.found + 1
-          }));
+          setCheckProgress(
+            (prev: { total: number; checked: number; found: number }) => ({
+              ...prev,
+              found: prev.found + 1
+            })
+          );
         }
       });
 
-      setCheckProgress((prev: { total: number; checked: number; found: number }) => ({
-        ...prev,
-        checked: prev.checked + users.length
-      }));
+      setCheckProgress(
+        (prev: { total: number; checked: number; found: number }) => ({
+          ...prev,
+          checked: prev.checked + users.length
+        })
+      );
 
-      const floodError = results.find(result => 
-        result?.error?.includes('FloodWaitError') || 
-        result?.error?.includes('FLOOD')
+      const floodError = results.find(
+        (result) =>
+          result?.error?.includes('FloodWaitError') ||
+          result?.error?.includes('FLOOD')
       );
 
       if (floodError) {
         const seconds = floodError.seconds || 180;
         const waitTime = (seconds + 10) * 1000;
         setWaitTimeLeft(Math.ceil(waitTime / 1000));
-        toast.info(`Rate limit reached. Waiting ${Math.ceil(waitTime / 1000)} seconds before next batch...`);
-        
+        toast.info(
+          `Rate limit reached. Waiting ${Math.ceil(waitTime / 1000)} seconds before next batch...`
+        );
+
         let waitStartTime = Date.now();
         while (Date.now() - waitStartTime < waitTime) {
           if (!shouldContinueChecking) {
             setWaitTimeLeft(null);
             throw new Error('Check stopped by user');
           }
-          const timeLeft = Math.ceil((waitTime - (Date.now() - waitStartTime)) / 1000);
+          const timeLeft = Math.ceil(
+            (waitTime - (Date.now() - waitStartTime)) / 1000
+          );
           setWaitTimeLeft(timeLeft);
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise((resolve) => setTimeout(resolve, 1000));
         }
         setWaitTimeLeft(null);
       }
-
     } catch (error) {
       if (error instanceof Error && error.message === 'Check stopped by user') {
         throw error;
@@ -720,7 +846,7 @@ export function CustomUsersTable({
   };
 
   const handleCheckNotFound = async () => {
-    const notFoundUsers = data.filter(user => !user.isFound);
+    const notFoundUsers = data.filter((user) => !user.isFound && !user.checked);
     if (notFoundUsers.length === 0) {
       toast.error('No users to check');
       return;
@@ -735,9 +861,10 @@ export function CustomUsersTable({
     });
 
     try {
+      const batchSize = getBatchSize();
       const batches = [];
-      for (let i = 0; i < notFoundUsers.length; i += BATCH_SIZE) {
-        batches.push(notFoundUsers.slice(i, i + BATCH_SIZE));
+      for (let i = 0; i < notFoundUsers.length; i += batchSize) {
+        batches.push(notFoundUsers.slice(i, i + batchSize));
       }
 
       for (const batch of batches) {
@@ -746,15 +873,18 @@ export function CustomUsersTable({
           localStorage.removeItem('checkingState');
           break;
         }
-        
+
         try {
           await checkBatch(batch);
-          
-          if (batches.indexOf(batch) < batches.length - 1 && shouldContinueChecking) {
+
+          if (
+            batches.indexOf(batch) < batches.length - 1 &&
+            shouldContinueChecking
+          ) {
             const delaySeconds = Math.ceil(BATCH_DELAY / 1000);
             setWaitTimeLeft(delaySeconds);
             toast.info(`Waiting ${delaySeconds} seconds before next batch...`);
-            
+
             let waitStartTime = Date.now();
             while (Date.now() - waitStartTime < BATCH_DELAY) {
               if (!shouldContinueChecking) {
@@ -762,15 +892,20 @@ export function CustomUsersTable({
                 localStorage.removeItem('checkingState');
                 break;
               }
-              const timeLeft = Math.ceil((BATCH_DELAY - (Date.now() - waitStartTime)) / 1000);
+              const timeLeft = Math.ceil(
+                (BATCH_DELAY - (Date.now() - waitStartTime)) / 1000
+              );
               setWaitTimeLeft(timeLeft);
-              await new Promise(resolve => setTimeout(resolve, 1000));
+              await new Promise((resolve) => setTimeout(resolve, 1000));
             }
             setWaitTimeLeft(null);
           }
         } catch (error) {
           setWaitTimeLeft(null);
-          if (error instanceof Error && error.message === 'Check stopped by user') {
+          if (
+            error instanceof Error &&
+            error.message === 'Check stopped by user'
+          ) {
             localStorage.removeItem('checkingState');
             break;
           }
@@ -806,7 +941,7 @@ export function CustomUsersTable({
 
   const handleDeleteSelected = async () => {
     const selectedRows = table.getSelectedRowModel().rows;
-    const selectedUsers = selectedRows.map(row => row.original);
+    const selectedUsers = selectedRows.map((row) => row.original);
 
     if (selectedUsers.length === 0) {
       toast.error('No users selected');
@@ -818,7 +953,7 @@ export function CustomUsersTable({
 
   const confirmDelete = async () => {
     const selectedRows = table.getSelectedRowModel().rows;
-    const selectedUsers = selectedRows.map(row => row.original);
+    const selectedUsers = selectedRows.map((row) => row.original);
 
     try {
       setIsDeleting(true);
@@ -828,7 +963,7 @@ export function CustomUsersTable({
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          userIds: selectedUsers.map(user => user._id)
+          userIds: selectedUsers.map((user) => user._id)
         })
       });
 
@@ -837,14 +972,59 @@ export function CustomUsersTable({
       }
 
       const data = await response.json();
-      setData(prev => prev.filter(user => !selectedUsers.some(selected => selected._id === user._id)));
+      setData((prev) =>
+        prev.filter(
+          (user) => !selectedUsers.some((selected) => selected._id === user._id)
+        )
+      );
       table.toggleAllPageRowsSelected(false);
       toast.success(`Successfully deleted ${data.deleted} users`);
       setIsDeleteDialogOpen(false);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to delete users');
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to delete users'
+      );
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteCheckedNotFound = async () => {
+    const checkedNotFoundUsers = data.filter(
+      (user) => user.checked && !user.isFound
+    );
+    if (checkedNotFoundUsers.length === 0) {
+      toast.error('No checked and not found users to delete');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/custom-users/delete-many', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          userIds: checkedNotFoundUsers.map((user) => user._id)
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete users');
+      }
+
+      const data = await response.json();
+      setData((prev) =>
+        prev.filter(
+          (user) =>
+            !checkedNotFoundUsers.some((selected) => selected._id === user._id)
+        )
+      );
+      toast.success(`Successfully deleted ${data.deleted} users`);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to delete users'
+      );
     }
   };
 
@@ -860,79 +1040,86 @@ export function CustomUsersTable({
     getPaginationRowModel: getPaginationRowModel(),
     initialState: {
       pagination: {
-        pageSize: 10,
-      },
-    },
+        pageSize: 10
+      }
+    }
   });
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap gap-4">
-        <div className="flex items-center gap-2">
+    <div className='space-y-4'>
+      <div className='flex flex-wrap gap-4'>
+        <div className='flex items-center gap-2'>
           <AddUserDialog onUserAdded={handleUserAdded} />
           {isChecking ? (
-            <div className="flex items-center gap-2">
-              <Button
-                variant="destructive"
-                onClick={handleStopChecking}
-              >
-                <Search className="mr-2 h-4 w-4" />
+            <div className='flex items-center gap-2'>
+              <Button variant='destructive' onClick={handleStopChecking}>
+                <Search className='mr-2 h-4 w-4' />
                 Stop Checking
               </Button>
               {waitTimeLeft !== null && (
-                <span className="text-sm text-muted-foreground">
+                <span className='text-muted-foreground text-sm'>
                   Waiting: {formatTime(waitTimeLeft)}
                 </span>
               )}
             </div>
           ) : (
-            <Button
-              variant="outline"
-              onClick={handleCheckNotFound}
-              disabled={!data.some(user => !user.isFound)}
-            >
-              <Search className="mr-2 h-4 w-4" />
-              Check Not Found
-            </Button>
+            <>
+              <Button
+                variant='outline'
+                onClick={handleCheckNotFound}
+                disabled={!data.some((user) => !user.isFound && !user.checked)}
+              >
+                <Search className='mr-2 h-4 w-4' />
+                Check Not Found
+              </Button>
+              <Button
+                variant='destructive'
+                onClick={handleDeleteCheckedNotFound}
+                disabled={!data.some((user) => user.checked && !user.isFound)}
+              >
+                <Trash2 className='mr-2 h-4 w-4' />
+                Delete Checked Not Found
+              </Button>
+            </>
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className='flex items-center gap-2'>
           <Button
-            variant="secondary"
+            variant='secondary'
             onClick={() => {
               const selectedRows = table.getSelectedRowModel().rows;
-              const selectedUsers = selectedRows.map(row => row.original);
+              const selectedUsers = selectedRows.map((row) => row.original);
               handleSendMessage(selectedUsers);
             }}
             disabled={table.getSelectedRowModel().rows.length === 0}
           >
-            <Send className="mr-2 h-4 w-4" />
+            <Send className='mr-2 h-4 w-4' />
             Message Selected ({table.getSelectedRowModel().rows.length})
           </Button>
           <Button
-            variant="destructive"
+            variant='destructive'
             onClick={handleDeleteSelected}
             disabled={table.getSelectedRowModel().rows.length === 0}
           >
-            <Trash2 className="mr-2 h-4 w-4" />
+            <Trash2 className='mr-2 h-4 w-4' />
             Delete Selected ({table.getSelectedRowModel().rows.length})
           </Button>
         </div>
 
-        <div className="flex items-center gap-2 ml-auto">
+        <div className='ml-auto flex items-center gap-2'>
           <Button
-            variant="outline"
+            variant='outline'
             onClick={() => {
               const selectedRows = table.getSelectedRowModel().rows;
-              const selectedUsers = selectedRows.map(row => row.original);
+              const selectedUsers = selectedRows.map((row) => row.original);
               if (onExportUsers) {
                 onExportUsers(selectedUsers);
               }
             }}
             disabled={table.getSelectedRowModel().rows.length === 0}
           >
-            <Download className="mr-2 h-4 w-4" />
+            <Download className='mr-2 h-4 w-4' />
             Export Selected ({table.getSelectedRowModel().rows.length})
           </Button>
         </div>
@@ -947,11 +1134,11 @@ export function CustomUsersTable({
         />
       )}
 
-      <div className="rounded-md border">
-        <div className="h-[500px] overflow-auto">
+      <div className='rounded-md border'>
+        <div className='h-[500px] overflow-auto'>
           <DataTable<CustomUser> table={table} />
         </div>
-        <div className="border-t p-4">
+        <div className='border-t p-4'>
           <DataTablePagination table={table} />
         </div>
       </div>
