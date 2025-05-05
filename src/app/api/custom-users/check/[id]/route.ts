@@ -14,10 +14,83 @@ type RouteParams = {
   }>;
 };
 
-export async function POST(_request: NextRequest, context: RouteParams) {
+async function processBatch(users: any[], client: TelegramClient) {
+  const results = [];
+
+  for (const user of users) {
+    try {
+      // Check if user exists in Telegram using ResolvePhone
+      const result = await client.invoke(
+        new Api.contacts.ResolvePhone({
+          phone: user.phone.replace(/\D/g, '')
+        })
+      );
+
+      const isFound = result?.users?.[0] ? true : false;
+      const telegramUser = isFound ? result.users[0] : null;
+
+      let username, firstName, lastName;
+
+      if (isFound && telegramUser) {
+        // Handle different types of user objects from Telegram
+        if ('username' in telegramUser) {
+          username = telegramUser.username;
+        }
+        if ('firstName' in telegramUser) {
+          firstName = telegramUser.firstName;
+        }
+        if ('lastName' in telegramUser) {
+          lastName = telegramUser.lastName;
+        }
+
+        // If we have a User object, try to get additional data
+        if (telegramUser instanceof Api.User) {
+          username = telegramUser.username || username;
+          firstName = telegramUser.firstName || firstName;
+          lastName = telegramUser.lastName || lastName;
+        }
+      }
+
+      results.push({
+        userId: user._id,
+        isFound,
+        error: isFound ? undefined : 'User not found in Telegram',
+        username,
+        firstName,
+        lastName,
+        checked: true
+      });
+    } catch (error: any) {
+      if (error.errorMessage === 'PHONE_NOT_OCCUPIED') {
+        results.push({
+          userId: user._id,
+          isFound: false,
+          error: 'This phone number is not registered on Telegram',
+          checked: true
+        });
+      } else {
+        results.push({
+          userId: user._id,
+          isFound: false,
+          error: error.message || 'Unknown error occurred',
+          checked: true
+        });
+      }
+    }
+  }
+
+  return results;
+}
+
+export async function POST(request: NextRequest, context: RouteParams) {
   const { id } = await context.params;
+  let batchSize = 1;
 
   try {
+    // Try to parse the request body, but don't fail if it's empty
+    const body = await request.json().catch(() => ({}));
+    batchSize = body.batchSize || 1;
+
     await connectDB();
     const { userId } = await auth();
 
@@ -40,92 +113,44 @@ export async function POST(_request: NextRequest, context: RouteParams) {
       );
     }
 
-    const customUser = await CustomUserModel.findOne({
-      _id: id,
-      userId: user._id
-    });
-
-    if (!customUser) {
-      return NextResponse.json(
-        { error: 'Custom user not found' },
-        { status: 404 }
-      );
-    }
-
-    // Create Telegram client with test mode configuration
-    const client = new TelegramClient(
-      new StringSession(session.sessionString),
-      Number(process.env.TELEGRAM_API_ID),
-      process.env.TELEGRAM_API_HASH as string,
-      {
-        connectionRetries: 5,
-        useWSS: true,
-        testServers: true
-      }
-    );
-
-    await client.connect();
-
-    try {
-      // Check if user exists in Telegram using ResolvePhone
-      const result = await client.invoke(
-        new Api.contacts.ResolvePhone({
-          phone: customUser.phone.replace(/\D/g, '')
-        })
-      );
-
-      const isFound = result?.users?.[0] ? true : false;
-      const telegramUser = isFound ? result.users[0] : null;
-
-      const updatedUser = await CustomUserModel.findByIdAndUpdate(
-        id,
-        {
-          isFound,
-          error: isFound ? undefined : 'User not found in Telegram',
-          username:
-            isFound && telegramUser && 'username' in telegramUser
-              ? telegramUser.username
-              : undefined,
-          firstName:
-            isFound && telegramUser && 'firstName' in telegramUser
-              ? telegramUser.firstName
-              : undefined,
-          lastName:
-            isFound && telegramUser && 'lastName' in telegramUser
-              ? telegramUser.lastName
-              : undefined,
-          checked: true
-        },
-        { new: true }
-      );
-
-      if (!updatedUser) {
-        throw new Error('Failed to update user');
-      }
-
-      return NextResponse.json({
-        success: true,
-        user: {
-          _id: updatedUser._id.toString(),
-          phone: updatedUser.phone,
-          username: updatedUser.username,
-          firstName: updatedUser.firstName,
-          lastName: updatedUser.lastName,
-          isFound: updatedUser.isFound,
-          error: updatedUser.error,
-          checked: updatedUser.checked,
-          createdAt: updatedUser.createdAt.toISOString(),
-          updatedAt: updatedUser.updatedAt.toISOString()
-        }
+    // If batchSize is 1, handle single user check
+    if (batchSize === 1) {
+      const customUser = await CustomUserModel.findOne({
+        _id: id,
+        userId: user._id
       });
-    } catch (error: any) {
-      // Handle specific Telegram API errors
-      if (error.errorMessage === 'PHONE_NOT_OCCUPIED') {
+
+      if (!customUser) {
+        return NextResponse.json(
+          { error: 'Custom user not found' },
+          { status: 404 }
+        );
+      }
+
+      // Create Telegram client with test mode configuration
+      const client = new TelegramClient(
+        new StringSession(session.sessionString),
+        Number(process.env.TELEGRAM_API_ID),
+        process.env.TELEGRAM_API_HASH as string,
+        {
+          connectionRetries: 5,
+          useWSS: true,
+          testServers: true
+        }
+      );
+
+      await client.connect();
+
+      try {
+        const [result] = await processBatch([customUser], client);
         const updatedUser = await CustomUserModel.findByIdAndUpdate(
           id,
           {
-            isFound: false,
-            error: 'This phone number is not registered on Telegram',
+            isFound: result.isFound,
+            error: result.error,
+            username: result.username,
+            firstName: result.firstName,
+            lastName: result.lastName,
             checked: true
           },
           { new: true }
@@ -146,12 +171,79 @@ export async function POST(_request: NextRequest, context: RouteParams) {
             updatedAt: updatedUser.updatedAt.toISOString()
           }
         });
+      } finally {
+        if (client.connected) {
+          await client.destroy();
+        }
+      }
+    } else {
+      // Handle batch processing
+      const uncheckedUsers = await CustomUserModel.find({
+        userId: user._id,
+        checked: { $ne: true }
+      }).limit(batchSize);
+
+      if (uncheckedUsers.length === 0) {
+        return NextResponse.json(
+          { error: 'No unchecked users found' },
+          { status: 404 }
+        );
       }
 
-      throw error; // Re-throw other errors
-    } finally {
-      if (client.connected) {
-        await client.destroy();
+      // Create Telegram client with test mode configuration
+      const client = new TelegramClient(
+        new StringSession(session.sessionString),
+        Number(process.env.TELEGRAM_API_ID),
+        process.env.TELEGRAM_API_HASH as string,
+        {
+          connectionRetries: 5,
+          useWSS: true,
+          testServers: true
+        }
+      );
+
+      await client.connect();
+
+      try {
+        const results = await processBatch(uncheckedUsers, client);
+
+        // Update all users in the database
+        const updatePromises = results.map((result) =>
+          CustomUserModel.findByIdAndUpdate(
+            result.userId,
+            {
+              isFound: result.isFound,
+              error: result.error,
+              username: result.username,
+              firstName: result.firstName,
+              lastName: result.lastName,
+              checked: true
+            },
+            { new: true }
+          )
+        );
+
+        const updatedUsers = await Promise.all(updatePromises);
+
+        return NextResponse.json({
+          success: true,
+          users: updatedUsers.map((user) => ({
+            _id: user._id.toString(),
+            phone: user.phone,
+            username: user.username,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            isFound: user.isFound,
+            error: user.error,
+            checked: user.checked,
+            createdAt: user.createdAt.toISOString(),
+            updatedAt: user.updatedAt.toISOString()
+          }))
+        });
+      } finally {
+        if (client.connected) {
+          await client.destroy();
+        }
       }
     }
   } catch (error) {

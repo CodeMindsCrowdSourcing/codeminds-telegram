@@ -365,7 +365,10 @@ function ActionCell({
       }
 
       const response = await fetch(`/api/custom-users/check/${user._id}`, {
-        method: 'POST'
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
 
       const data = await response.json();
@@ -736,115 +739,6 @@ export function CustomUsersTable({
     setIsSendMessageOpen(true);
   };
 
-  const checkBatch = async (users: CustomUser[]) => {
-    if (!shouldContinueChecking) {
-      setIsChecking(false);
-      return;
-    }
-
-    try {
-      const controller = new AbortController();
-      abortControllerRef.current = controller;
-
-      // Фильтруем только непроверенных пользователей
-      const uncheckedUsers = users.filter((user) => !user.checked);
-
-      const results = await Promise.all(
-        uncheckedUsers.map(async (user) => {
-          if (!shouldContinueChecking) {
-            controller.abort();
-            throw new Error('Check stopped by user');
-          }
-
-          try {
-            const response = await fetch(
-              `/api/custom-users/check/${user._id}`,
-              {
-                method: 'POST',
-                signal: controller.signal
-              }
-            );
-            const data = await response.json();
-            return data;
-          } catch (error) {
-            if (error instanceof Error && error.name === 'AbortError') {
-              throw new Error('Check stopped by user');
-            }
-            console.error('Error checking user:', error);
-            return null;
-          }
-        })
-      ).catch((error) => {
-        if (
-          error instanceof Error &&
-          error.message === 'Check stopped by user'
-        ) {
-          return [];
-        }
-        throw error;
-      });
-
-      if (!shouldContinueChecking) {
-        throw new Error('Check stopped by user');
-      }
-
-      const validResults = results.filter((result) => result && result.success);
-      validResults.forEach((result) => {
-        handleUserUpdated(result.user);
-        if (result.user.isFound) {
-          setCheckProgress(
-            (prev: { total: number; checked: number; found: number }) => ({
-              ...prev,
-              found: prev.found + 1
-            })
-          );
-        }
-      });
-
-      setCheckProgress(
-        (prev: { total: number; checked: number; found: number }) => ({
-          ...prev,
-          checked: prev.checked + users.length
-        })
-      );
-
-      const floodError = results.find(
-        (result) =>
-          result?.error?.includes('FloodWaitError') ||
-          result?.error?.includes('FLOOD')
-      );
-
-      if (floodError) {
-        const seconds = floodError.seconds || 180;
-        const waitTime = (seconds + 10) * 1000;
-        setWaitTimeLeft(Math.ceil(waitTime / 1000));
-        toast.info(
-          `Rate limit reached. Waiting ${Math.ceil(waitTime / 1000)} seconds before next batch...`
-        );
-
-        let waitStartTime = Date.now();
-        while (Date.now() - waitStartTime < waitTime) {
-          if (!shouldContinueChecking) {
-            setWaitTimeLeft(null);
-            throw new Error('Check stopped by user');
-          }
-          const timeLeft = Math.ceil(
-            (waitTime - (Date.now() - waitStartTime)) / 1000
-          );
-          setWaitTimeLeft(timeLeft);
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-        }
-        setWaitTimeLeft(null);
-      }
-    } catch (error) {
-      if (error instanceof Error && error.message === 'Check stopped by user') {
-        throw error;
-      }
-      console.error('Batch check error:', error);
-      toast.error('Error checking batch, continuing with next batch...');
-    }
-  };
-
   const handleCheckNotFound = async () => {
     const notFoundUsers = data.filter((user) => !user.isFound && !user.checked);
     if (notFoundUsers.length === 0) {
@@ -875,7 +769,41 @@ export function CustomUsersTable({
         }
 
         try {
-          await checkBatch(batch);
+          // Use the first user's ID as the endpoint parameter
+          const response = await fetch(
+            `/api/custom-users/check/${batch[0]._id}`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ batchSize: batch.length })
+            }
+          );
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || 'Failed to check users');
+          }
+
+          // Update the UI with the results
+          if (data.users) {
+            data.users.forEach((user: CustomUser) => {
+              handleUserUpdated(user);
+              if (user.isFound) {
+                setCheckProgress((prev) => ({
+                  ...prev,
+                  found: prev.found + 1
+                }));
+              }
+            });
+          }
+
+          setCheckProgress((prev) => ({
+            ...prev,
+            checked: prev.checked + batch.length
+          }));
 
           if (
             batches.indexOf(batch) < batches.length - 1 &&
