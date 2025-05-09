@@ -4,6 +4,7 @@ import connectDB from '@/lib/mongodb';
 import { CustomUserModel } from '@/models/custom-user';
 import { UserModel } from '@/models/user';
 import { TelegramSessionModel } from '@/models/telegram-session';
+import { TelegramCheckLogModel } from '@/models/telegram-check-log';
 import { TelegramClient } from 'telegram';
 import { StringSession } from 'telegram/sessions';
 import { Api } from 'telegram/tl';
@@ -19,22 +20,25 @@ const activeVerifications = new Map<string, {
   nextBatchTime: Date | null;
 }>();
 
-async function processBatch(users: any[], client: TelegramClient) {
+async function processBatch(users: any[], client: TelegramClient, userId: string) {
   const results = [];
 
   for (const user of users) {
     try {
+      const cleanPhone = user.phone.replace(/\D/g, '');
+      const clientConnected = client.connected;
+      const clientAuthorized = await client.isUserAuthorized();
+      if (!clientConnected || !clientAuthorized) {
+        throw new Error('Telegram client is not properly connected or authorized');
+      }
       const result = await client.invoke(
         new Api.contacts.ResolvePhone({
-          phone: user.phone.replace(/\D/g, '')
+          phone: cleanPhone
         })
       );
-
       const isFound = result?.users?.[0] ? true : false;
       const telegramUser = isFound ? result.users[0] : null;
-
       let username, firstName, lastName;
-
       if (isFound && telegramUser) {
         if ('username' in telegramUser && telegramUser.username) {
           username = telegramUser.username;
@@ -45,53 +49,67 @@ async function processBatch(users: any[], client: TelegramClient) {
         if ('lastName' in telegramUser && telegramUser.lastName) {
           lastName = telegramUser.lastName;
         }
-
         if (telegramUser instanceof Api.User) {
           if (telegramUser.username) username = telegramUser.username;
           if (telegramUser.firstName) firstName = telegramUser.firstName;
           if (telegramUser.lastName) lastName = telegramUser.lastName;
         }
       }
-
+      await TelegramCheckLogModel.create({
+        userId,
+        phone: user.phone,
+        cleanPhone,
+        clientConnected,
+        clientAuthorized,
+        telegramResponse: result,
+        isFound,
+        telegramUser: telegramUser ? telegramUser.toJSON() : null
+      });
       const updateData: any = {
         isFound,
         error: isFound ? undefined : 'User not found in Telegram',
         checked: true
       };
-
       if (username) updateData.username = username;
       if (firstName) updateData.firstName = firstName;
       if (lastName) updateData.lastName = lastName;
-
       results.push({
         userId: user._id,
         ...updateData
       });
     } catch (error: any) {
+      await TelegramCheckLogModel.create({
+        userId,
+        phone: user.phone,
+        cleanPhone: user.phone.replace(/\D/g, ''),
+        clientConnected: client.connected,
+        clientAuthorized: await client.isUserAuthorized(),
+        telegramResponse: null,
+        isFound: false,
+        error: error.errorMessage || error.message || 'Unknown error occurred',
+        telegramUser: null
+      });
+      let errorMessage = 'Unknown error occurred';
       if (error.errorMessage === 'PHONE_NOT_OCCUPIED') {
-        results.push({
-          userId: user._id,
-          isFound: false,
-          error: 'This phone number is not registered on Telegram',
-          checked: true
-        });
-      } else {
-        results.push({
-          userId: user._id,
-          isFound: false,
-          error: error.message || 'Unknown error occurred',
-          checked: true
-        });
+        errorMessage = 'This phone number is not registered on Telegram';
+      } else if (error.message) {
+        errorMessage = error.message;
+      } else if (error.errorMessage) {
+        errorMessage = error.errorMessage;
       }
+      results.push({
+        userId: user._id,
+        isFound: false,
+        error: errorMessage,
+        checked: true
+      });
     }
   }
-
   return results;
 }
 
 async function startVerificationProcess(userId: string, user: any, session: any, batchSize: number, delayTime: number) {
   let client: TelegramClient | null = null;
-  
   try {
     client = new TelegramClient(
       new StringSession(session.sessionString),
@@ -103,10 +121,7 @@ async function startVerificationProcess(userId: string, user: any, session: any,
         testServers: true
       }
     );
-
     await client.connect();
-
-    // Update the verification status with the client
     const currentStatus = activeVerifications.get(userId);
     if (currentStatus) {
       activeVerifications.set(userId, {
@@ -115,33 +130,25 @@ async function startVerificationProcess(userId: string, user: any, session: any,
         nextBatchTime: null
       });
     }
-
     let processedCount = 0;
     const total = currentStatus?.total || 0;
-
     while (processedCount < total && activeVerifications.get(userId)?.isRunning) {
       try {
         const now = new Date();
         const currentStatus = activeVerifications.get(userId);
-        
-        // Check if we need to wait
         if (currentStatus?.nextBatchTime && now < currentStatus.nextBatchTime) {
-          await new Promise(resolve => setTimeout(resolve, 1000)); // Check every second
+          const waitTime = currentStatus.nextBatchTime.getTime() - now.getTime();
+          await new Promise(resolve => setTimeout(resolve, 1000));
           continue;
         }
-
         const uncheckedUsers = await CustomUserModel.find({
           userId: user._id,
           checked: { $ne: true }
         }).limit(batchSize);
-
         if (uncheckedUsers.length === 0) {
           break;
         }
-
-        const results = await processBatch(uncheckedUsers, client);
-
-        // Update users in database
+        const results = await processBatch(uncheckedUsers, client, user._id);
         const updatePromises = results.map((result) =>
           CustomUserModel.findByIdAndUpdate(
             result.userId,
@@ -156,14 +163,10 @@ async function startVerificationProcess(userId: string, user: any, session: any,
             { new: true }
           )
         );
-
         await Promise.all(updatePromises);
-
-        // Update progress
         processedCount += results.length;
         const foundCount = results.filter(r => r.isFound).length;
         const nextBatchTime = new Date(now.getTime() + delayTime * 1000);
-        
         if (currentStatus) {
           activeVerifications.set(userId, {
             ...currentStatus,
@@ -173,14 +176,10 @@ async function startVerificationProcess(userId: string, user: any, session: any,
             nextBatchTime: processedCount < total ? nextBatchTime : null
           });
         }
-
-        if (processedCount < total) {
-        }
       } catch (error) {
         // Continue with next batch even if current one failed
       }
     }
-
   } catch (error) {
     throw error;
   } finally {

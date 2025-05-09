@@ -15,8 +15,9 @@ import {
   Settings,
   Users
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import React from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -67,6 +68,8 @@ function ActionCell({
   onUpdateBot
 }: ActionCellProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewMedia, setPreviewMedia] = useState<{url: string, type: 'image' | 'video'} | null>(null);
   const [editData, setEditData] = useState({
     buttonText: bot.buttonText,
     infoText: bot.infoText,
@@ -83,6 +86,22 @@ function ActionCell({
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const router = useRouter();
+  const [isGroupsDialogOpen, setIsGroupsDialogOpen] = useState(false);
+  const [groups, setGroups] = useState<any[]>([]);
+  const [isGroupsLoading, setIsGroupsLoading] = useState(false);
+  const [isAddMessageOpen, setIsAddMessageOpen] = useState(false);
+  const [addMessageGroupId, setAddMessageGroupId] = useState<string | null>(null);
+  const [messageText, setMessageText] = useState('');
+  const [messageDelay, setMessageDelay] = useState(60);
+  const [messageEnabled, setMessageEnabled] = useState(true);
+  const [messageImage, setMessageImage] = useState<string>('');
+  const [messageVideo, setMessageVideo] = useState<string>('');
+  const [isAddingMessage, setIsAddingMessage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [editMessages, setEditMessages] = useState<{ [groupId: string]: { [msgId: string]: any } }>({});
+  const [messageButtonText, setMessageButtonText] = useState('');
+  const [messageButtonUrl, setMessageButtonUrl] = useState('');
+  const [deleteDialog, setDeleteDialog] = useState<{open: boolean, groupId?: string, msgId?: string}>({open: false});
 
   useEffect(() => {
     setEditData({
@@ -98,6 +117,24 @@ function ActionCell({
     });
     setPreviewUrl(bot.linkImage || null);
   }, [isEditDialogOpen, bot]);
+
+  const fetchGroups = async () => {
+    setIsGroupsLoading(true);
+    try {
+      const res = await fetch(`/api/telegram-bot/${bot.id}/groups`);
+      const data = await res.json();
+      setGroups(data);
+    } catch (e) {
+      toast.error('Failed to load groups');
+    } finally {
+      setIsGroupsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isGroupsDialogOpen) fetchGroups();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isGroupsDialogOpen]);
 
   const handleAction = async (
     action: () => Promise<void>,
@@ -167,6 +204,171 @@ function ActionCell({
       setIsUploading(false);
     }
   };
+
+  const handleMediaChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsAddingMessage(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (data.url) {
+        if (file.type.startsWith('video/')) {
+          setMessageVideo(data.url);
+          setMessageImage('');
+        } else if (file.type.startsWith('image/')) {
+          setMessageImage(data.url);
+          setMessageVideo('');
+        }
+      } else {
+        toast.error('Failed to upload media');
+      }
+    } catch (e) {
+      toast.error('Failed to upload media');
+    } finally {
+      setIsAddingMessage(false);
+    }
+  };
+
+  const handleAddMessage = (groupId: string) => {
+    setAddMessageGroupId(groupId);
+    setMessageText('');
+    setMessageDelay(60);
+    setMessageEnabled(true);
+    setMessageImage('');
+    setMessageVideo('');
+    setMessageButtonText('');
+    setMessageButtonUrl('');
+    setIsAddMessageOpen(true);
+  };
+
+  const handleAddMessageSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addMessageGroupId) return;
+    setIsAddingMessage(true);
+    try {
+      const body: any = {
+        text: messageText,
+        delay: messageDelay,
+        enabled: messageEnabled,
+        buttonText: messageButtonText,
+        buttonUrl: messageButtonUrl
+      };
+      if (messageImage) body.image = messageImage;
+      if (messageVideo) body.video = messageVideo;
+      const res = await fetch(`/api/telegram-bot/group/${addMessageGroupId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) throw new Error('Failed to add message');
+      toast.success('Message added');
+      setIsAddMessageOpen(false);
+      setAddMessageGroupId(null);
+      setMessageText('');
+      setMessageDelay(60);
+      setMessageEnabled(true);
+      setMessageImage('');
+      setMessageVideo('');
+      setMessageButtonText('');
+      setMessageButtonUrl('');
+      fetchGroups();
+    } catch (e) {
+      toast.error('Failed to add message');
+    } finally {
+      setIsAddingMessage(false);
+    }
+  };
+
+  function handleFieldChange(groupId: string, msgId: string, field: string, value: any) {
+    setEditMessages(prev => ({
+      ...prev,
+      [groupId]: {
+        ...prev[groupId],
+        [msgId]: {
+          ...((prev[groupId] && prev[groupId][msgId]) || {}),
+          [field]: value
+        }
+      }
+    }));
+  }
+
+  async function handleSaveAllMessages(groupId: string, messages: any[]) {
+    const edits = editMessages[groupId] || {};
+    const patchRequests = Object.entries(edits)
+      .filter(([msgId, changes]) => Object.keys(changes).length > 0)
+      .map(([msgId, changes]) =>
+        fetch(`/api/telegram-bot/group/${groupId}/messages/${msgId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(changes)
+        })
+      );
+    if (patchRequests.length > 0) {
+      await Promise.all(patchRequests);
+      fetchGroups();
+      toast.success('Messages updated');
+      setEditMessages(prev => ({ ...prev, [groupId]: {} }));
+    } else {
+      toast.info('No changes to save');
+    }
+  }
+
+  async function handleUploadMedia(groupId: string, msgId: string, file: File) {
+    setEditMessages(prev => ({
+      ...prev,
+      [groupId]: {
+        ...prev[groupId],
+        [msgId]: {
+          ...((prev[groupId] && prev[groupId][msgId]) || {}),
+          isUploading: true
+        }
+      }
+    }));
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData
+    });
+    const data = await res.json();
+    if (data.url) {
+      await fetch(`/api/telegram-bot/group/${groupId}/messages/${msgId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(file.type.startsWith('video/') ? { video: data.url, image: undefined } : { image: data.url, video: undefined })
+      });
+      fetchGroups();
+      toast.success(file.type.startsWith('video/') ? 'Video uploaded' : 'Image uploaded');
+    } else {
+      toast.error('Failed to upload media');
+    }
+    setEditMessages(prev => ({
+      ...prev,
+      [groupId]: {
+        ...prev[groupId],
+        [msgId]: {
+          ...((prev[groupId] && prev[groupId][msgId]) || {}),
+          isUploading: false
+        }
+      }
+    }));
+  }
+
+  async function handleDeleteMessage(groupId: string, msgId: string) {
+    const res = await fetch(`/api/telegram-bot/group/${groupId}/messages/${msgId}`, { method: 'DELETE' });
+    if (res.ok) {
+      toast.success('Message deleted');
+      fetchGroups();
+    } else {
+      toast.error('Failed to delete message');
+    }
+  }
 
   return (
     <>
@@ -270,6 +472,8 @@ function ActionCell({
                     <Image
                       src={previewUrl}
                       alt="Preview"
+                      width={320}
+                      height={180}
                       className="h-full w-full object-cover"
                     />
                   ) : (
@@ -338,6 +542,232 @@ function ActionCell({
         </DialogContent>
       </Dialog>
 
+      <Dialog open={isGroupsDialogOpen} onOpenChange={setIsGroupsDialogOpen}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>Groups for this bot</DialogTitle>
+          </DialogHeader>
+          {isGroupsLoading ? (
+            <div className="text-center py-8">Loading...</div>
+          ) : (
+            <div className="space-y-6">
+              {groups.length === 0 ? (
+                <div className="text-muted-foreground">No groups found.</div>
+              ) : (
+                groups.map((group: any) => (
+                  <div key={group._id} className="bg-muted rounded-lg border mb-4 p-2">
+                    <div className="flex items-center gap-4 mb-2">
+                      <div className="font-semibold">{group.groupName}</div>
+                      <div className="text-xs text-muted-foreground">{group.groupId}</div>
+                      <Button size="sm" variant="outline" onClick={() => handleAddMessage(group._id)}>
+                        Add message
+                      </Button>
+                    </div>
+                    {group.messages && group.messages.length > 0 && (
+                      <div className="overflow-x-auto max-h-[65vh]">
+                        <table className="w-full text-xs border">
+                          <thead className="sticky top-0 bg-muted z-10">
+                            <tr>
+                              <th className="p-1 border text-left">Text</th>
+                              <th className="p-1 border text-left">Delay</th>
+                              <th className="p-1 border text-left">Status</th>
+                              <th className="p-1 border text-left">Image</th>
+                              <th className="p-1 border text-left">Button</th>
+                              <th className="p-1 border text-left">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {group.messages.map((msg: any, idx: number) => {
+                              const msgId = msg._id || String(idx);
+                              const edit = editMessages[group._id]?.[msgId] || {};
+                              return (
+                                <tr key={msg._id || idx} className="align-middle">
+                                  <td className="p-1 border align-middle">
+                                    <input
+                                      className="font-mono text-xs w-full bg-transparent"
+                                      value={edit.text !== undefined ? edit.text : msg.text}
+                                      onChange={e => handleFieldChange(group._id, msgId, 'text', e.target.value)}
+                                    />
+                                  </td>
+                                  <td className="p-1 border align-middle">
+                                    <input
+                                      type="number"
+                                      className="text-xs w-16 bg-transparent"
+                                      value={edit.delay !== undefined ? edit.delay : msg.delay}
+                                      min={1}
+                                      onChange={e => handleFieldChange(group._id, msgId, 'delay', Number(e.target.value))}
+                                    />
+                                  </td>
+                                  <td className="p-1 border align-middle">
+                                    <div className="flex items-center gap-2">
+                                      <input
+                                        type="checkbox"
+                                        checked={edit.enabled !== undefined ? edit.enabled : msg.enabled}
+                                        onChange={e => handleFieldChange(group._id, msgId, 'enabled', e.target.checked)}
+                                        className="align-middle"
+                                      />
+                                      <span className="text-xs text-muted-foreground">{(edit.enabled !== undefined ? edit.enabled : msg.enabled) ? 'Enabled' : 'Disabled'}</span>
+                                    </div>
+                                  </td>
+                                  <td className="p-1 border align-middle">
+                                    <div className="flex items-center gap-2">
+                                      {(msg.image || msg.video) && (
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => {
+                                            setPreviewMedia({
+                                              url: msg.video ? msg.video : msg.image,
+                                              type: msg.video ? 'video' : 'image'
+                                            });
+                                            setIsPreviewOpen(true);
+                                          }}
+                                        >
+                                          Show
+                                        </Button>
+                                      )}
+                                      <label className="inline-block cursor-pointer text-primary underline">
+                                        Upload media
+                                        <input
+                                          type="file"
+                                          accept="image/*,video/*"
+                                          style={{ display: 'none' }}
+                                          onChange={e => {
+                                            const file = e.target.files?.[0];
+                                            if (file) handleUploadMedia(group._id, msgId, file);
+                                          }}
+                                        />
+                                      </label>
+                                      {edit.isUploading && (
+                                        <span className="ml-2 text-xs text-muted-foreground">Uploading...</span>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="p-1 border">
+                                    <div className="flex flex-col gap-1">
+                                      <input
+                                        className="font-mono text-xs w-full bg-transparent placeholder:text-muted-foreground"
+                                        value={edit.buttonText !== undefined ? edit.buttonText : msg.buttonText || ''}
+                                        onChange={e => handleFieldChange(group._id, msgId, 'buttonText', e.target.value)}
+                                        placeholder="Button text"
+                                      />
+                                      <input
+                                        className="font-mono text-xs w-full bg-transparent mt-1 placeholder:text-muted-foreground"
+                                        value={edit.buttonUrl !== undefined ? edit.buttonUrl : msg.buttonUrl || ''}
+                                        onChange={e => handleFieldChange(group._id, msgId, 'buttonUrl', e.target.value)}
+                                        placeholder="Button URL"
+                                      />
+                                    </div>
+                                  </td>
+                                  <td className="p-1 border">
+                                    <Button size="icon" variant="ghost" onClick={() => setDeleteDialog({open: true, groupId: group._id, msgId})} title="Delete message">
+                                      <Trash2 className="w-4 h-4 text-destructive" />
+                                    </Button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                        <div className="flex justify-end mt-2">
+                          <Button size="sm" variant="default" onClick={() => handleSaveAllMessages(group._id, group.messages)}
+                            disabled={Object.values(editMessages[group._id] || {}).some(e => e.isUploading)}>
+                            Save All
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isAddMessageOpen} onOpenChange={setIsAddMessageOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add message to group</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleAddMessageSubmit} className="space-y-4">
+            <div>
+              <label className="block mb-1">Text</label>
+              <Input value={messageText} onChange={e => setMessageText(e.target.value)} required disabled={isAddingMessage} />
+            </div>
+            <div>
+              <label className="block mb-1">Delay (seconds)</label>
+              <Input type="number" value={messageDelay} onChange={e => setMessageDelay(Number(e.target.value))} min={1} required disabled={isAddingMessage} />
+            </div>
+            <div className="flex items-center gap-2">
+              <input type="checkbox" checked={messageEnabled} onChange={e => setMessageEnabled(e.target.checked)} disabled={isAddingMessage} />
+              <span>Enabled</span>
+            </div>
+            <div>
+              <label className="block mb-1">Media (image or video, optional)</label>
+              <Input type="file" accept="image/*,video/*" ref={fileInputRef} onChange={handleMediaChange} disabled={isAddingMessage} />
+              {messageImage && <img src={messageImage} alt="preview" className="mt-2 max-h-32" />}
+              {messageVideo && <video src={messageVideo} controls className="mt-2 max-h-32" />}
+            </div>
+            <div>
+              <label className="block mb-1">Button Text (optional)</label>
+              <Input value={messageButtonText} onChange={e => setMessageButtonText(e.target.value)} disabled={isAddingMessage} />
+            </div>
+            <div>
+              <label className="block mb-1">Button URL (optional)</label>
+              <Input value={messageButtonUrl} onChange={e => setMessageButtonUrl(e.target.value)} disabled={isAddingMessage} />
+            </div>
+            <Button type="submit" className="w-full" disabled={isAddingMessage}>
+              {isAddingMessage ? 'Adding...' : 'Add message'}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Media Preview</DialogTitle>
+          </DialogHeader>
+          <div className="relative aspect-video w-full overflow-hidden rounded-lg">
+            {previewMedia?.type === 'video' ? (
+              <video
+                src={previewMedia.url}
+                controls
+                className="h-full w-full object-contain"
+              />
+            ) : (
+              <Image
+                src={previewMedia?.url || ''}
+                alt="Preview"
+                fill
+                className="object-contain"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleteDialog.open} onOpenChange={open => setDeleteDialog(prev => ({...prev, open}))}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete message?</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this message? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setDeleteDialog({open: false})}>Cancel</Button>
+            <Button variant="destructive" onClick={async () => {
+              if (deleteDialog.groupId && deleteDialog.msgId) {
+                await handleDeleteMessage(deleteDialog.groupId, deleteDialog.msgId);
+              }
+              setDeleteDialog({open: false});
+            }}>Delete</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant='ghost' className='h-8 w-8 p-0'>
@@ -358,6 +788,12 @@ function ActionCell({
           <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)}>
             <Settings className='mr-2 h-4 w-4' />
             Edit Parameters
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => setIsGroupsDialogOpen(true)}
+          >
+            <Users className='mr-2 h-4 w-4' />
+            Show Groups
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => router.push(`/dashboard/telegram-bot/${bot.id}`)}
