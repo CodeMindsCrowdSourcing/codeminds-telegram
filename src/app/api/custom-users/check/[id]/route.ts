@@ -33,32 +33,38 @@ async function processBatch(users: any[], client: TelegramClient) {
 
       if (isFound && telegramUser) {
         // Handle different types of user objects from Telegram
-        if ('username' in telegramUser) {
+        if ('username' in telegramUser && telegramUser.username) {
           username = telegramUser.username;
         }
-        if ('firstName' in telegramUser) {
+        if ('firstName' in telegramUser && telegramUser.firstName) {
           firstName = telegramUser.firstName;
         }
-        if ('lastName' in telegramUser) {
+        if ('lastName' in telegramUser && telegramUser.lastName) {
           lastName = telegramUser.lastName;
         }
 
         // If we have a User object, try to get additional data
         if (telegramUser instanceof Api.User) {
-          username = telegramUser.username || username;
-          firstName = telegramUser.firstName || firstName;
-          lastName = telegramUser.lastName || lastName;
+          if (telegramUser.username) username = telegramUser.username;
+          if (telegramUser.firstName) firstName = telegramUser.firstName;
+          if (telegramUser.lastName) lastName = telegramUser.lastName;
         }
       }
 
-      results.push({
-        userId: user._id,
+      const updateData: any = {
         isFound,
         error: isFound ? undefined : 'User not found in Telegram',
-        username,
-        firstName,
-        lastName,
         checked: true
+      };
+
+      // Only add fields that were actually found
+      if (username) updateData.username = username;
+      if (firstName) updateData.firstName = firstName;
+      if (lastName) updateData.lastName = lastName;
+
+      results.push({
+        userId: user._id,
+        ...updateData
       });
     } catch (error: any) {
       if (error.errorMessage === 'PHONE_NOT_OCCUPIED') {
