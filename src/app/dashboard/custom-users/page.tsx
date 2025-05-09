@@ -18,6 +18,8 @@ import { CustomUsersTable } from '@/features/custom-users/components/custom-user
 import { toast } from 'sonner';
 import connectDB from '@/lib/mongodb';
 import { SettingsForm } from '@/components/custom-users/settings-form';
+import { LogsViewer } from '@/components/custom-users/logs-viewer';
+import PageContainer from '@/components/layout/page-container';
 
 export default async function CustomUsersPage() {
   await connectDB();
@@ -73,113 +75,129 @@ export default async function CustomUsersPage() {
   };
 
   return (
-    <div className='container mx-auto space-y-6 p-3 py-6'>
-      <h1 className='text-2xl font-bold'>Custom Users</h1>
+    <PageContainer>
+      <div className='space-y-6 w-full px-4'>
+        <h1 className='text-2xl font-bold'>Custom Users</h1>
 
-      {!isConnected && (
-        <Alert>
-          <AlertCircle className='h-4 w-4' />
-          <AlertTitle>Telegram Account Required</AlertTitle>
-          <AlertDescription>
-            To verify phone numbers, you need to connect your Telegram account
-            first.{' '}
-            <Link
-              href='/dashboard/telegram-connect'
-              className='font-medium underline'
-            >
-              Connect now
-            </Link>
-          </AlertDescription>
-        </Alert>
-      )}
+        {!isConnected && (
+          <Alert>
+            <AlertCircle className='h-4 w-4' />
+            <AlertTitle>Telegram Account Required</AlertTitle>
+            <AlertDescription>
+              To verify phone numbers, you need to connect your Telegram account
+              first.{' '}
+              <Link
+                href='/dashboard/telegram-connect'
+                className='font-medium underline'
+              >
+                Connect now
+              </Link>
+            </AlertDescription>
+          </Alert>
+        )}
 
-      <Tabs defaultValue='users' className='space-y-4'>
-        <TabsList className='w-full justify-start'>
-          <TabsTrigger value='users'>Users List</TabsTrigger>
-          <TabsTrigger value='add'>Add Users</TabsTrigger>
-          <TabsTrigger value='settings'>Settings</TabsTrigger>
-        </TabsList>
+        <Tabs defaultValue='users' className='space-y-4'>
+          <TabsList className='w-full justify-start'>
+            <TabsTrigger value='users'>Users List</TabsTrigger>
+            <TabsTrigger value='add'>Add Users</TabsTrigger>
+            <TabsTrigger value='settings'>Settings</TabsTrigger>
+          </TabsList>
 
-        {/* Users List Tab */}
-        <TabsContent value='users'>
-          <Card>
-            <CardHeader>
-              <CardTitle>Your Custom Users</CardTitle>
-              <CardDescription>
-                List of all phone numbers youve checked
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <CustomUsersTable
-                data={customUsers}
-                onExportUsers={handleExportUsers}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
+          {/* Users List Tab */}
+          <TabsContent value='users'>
+            <Card>
+              <CardHeader>
+                <CardTitle>Your Custom Users</CardTitle>
+                <CardDescription>
+                  List of all phone numbers youve checked
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CustomUsersTable
+                  data={customUsers}
+                  onExportUsers={handleExportUsers}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        {/* Add Users Tab */}
-        <TabsContent value='add'>
-          <Card>
-            <CardHeader>
-              <CardTitle>Add Users</CardTitle>
-              <CardDescription>
-                Upload users from CSV or add them manually
-              </CardDescription>
-            </CardHeader>
-            <CardContent className='space-y-6'>
-              <div>
-                <h3 className='mb-2 text-lg font-medium'>Upload CSV</h3>
-                <p className='text-muted-foreground mb-4 text-sm'>
-                  Upload a CSV file containing phone numbers. Recommended batch
-                  size: 50-100 numbers.
-                </p>
-                <UploadForm isConnected={isConnected} />
-              </div>
+          {/* Add Users Tab */}
+          <TabsContent value='add'>
+            <Card>
+              <CardHeader>
+                <CardTitle>Add Users</CardTitle>
+                <CardDescription>
+                  Upload users from CSV or add them manually
+                </CardDescription>
+              </CardHeader>
+              <CardContent className='space-y-6'>
+                <div>
+                  <h3 className='mb-2 text-lg font-medium'>Upload CSV</h3>
+                  <p className='text-muted-foreground mb-4 text-sm'>
+                    Upload a CSV file containing phone numbers. Recommended batch
+                    size: 50-100 numbers.
+                  </p>
+                  <UploadForm isConnected={isConnected} />
+                </div>
 
-              <div>
-                <h3 className='mb-2 text-lg font-medium'>Safety Tips</h3>
-                <Alert>
-                  <AlertCircle className='h-4 w-4' />
-                  <AlertTitle>Important Information</AlertTitle>
-                  <AlertDescription className='space-y-2'>
-                    <p>• Wait at least 2 seconds between checks</p>
-                    <p>• Maximum 100 checks per day</p>
-                    <p>• Use proxy if available</p>
-                    <p>• Avoid checking numbers in bulk</p>
-                  </AlertDescription>
-                </Alert>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                <div>
+                  <h3 className='mb-2 text-lg font-medium'>Safety Tips</h3>
+                  <Alert>
+                    <AlertCircle className='h-4 w-4' />
+                    <AlertTitle>Important Information</AlertTitle>
+                    <AlertDescription className='space-y-2'>
+                      <p>• Wait at least 2 seconds between checks</p>
+                      <p>• Maximum 100 checks per day</p>
+                      <p>• Use proxy if available</p>
+                      <p>• Avoid checking numbers in bulk</p>
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        {/* Settings Tab */}
-        <TabsContent value='settings'>
-          <Card>
-            <CardHeader>
-              <CardTitle>Verification Settings</CardTitle>
-              <CardDescription>
-                Configure your verification preferences
-              </CardDescription>
-            </CardHeader>
-            <CardContent className='space-y-6'>
-              <SettingsForm />
+          {/* Settings Tab */}
+          <TabsContent value='settings'>
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Verification Settings</CardTitle>
+                  <CardDescription>
+                    Configure your verification preferences
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className='space-y-6'>
+                  <SettingsForm />
 
-              <Alert>
-                <AlertCircle className='h-4 w-4' />
-                <AlertTitle>Safety Tips</AlertTitle>
-                <AlertDescription className='space-y-2'>
-                  <p>• Wait at least 2 seconds between checks</p>
-                  <p>• Maximum 100 checks per day</p>
-                  <p>• Use proxy if available</p>
-                  <p>• Avoid checking numbers in bulk</p>
-                </AlertDescription>
-              </Alert>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
+                  <Alert>
+                    <AlertCircle className='h-4 w-4' />
+                    <AlertTitle>Safety Tips</AlertTitle>
+                    <AlertDescription className='space-y-2'>
+                      <p>• Wait at least 2 seconds between checks</p>
+                      <p>• Maximum 100 checks per day</p>
+                      <p>• Use proxy if available</p>
+                      <p>• Avoid checking numbers in bulk</p>
+                    </AlertDescription>
+                  </Alert>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Verification Logs</CardTitle>
+                  <CardDescription>
+                    View detailed logs of all verification attempts
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <LogsViewer />
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </PageContainer>
   );
 }

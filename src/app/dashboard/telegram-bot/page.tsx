@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import PageContainer from '@/components/layout/page-container';
 
 export default function TelegramBotsPage() {
   const [bots, setBots] = useState<TelegramBot[]>([]);
@@ -305,176 +306,178 @@ export default function TelegramBotsPage() {
   }
 
   return (
-    <div className='flex h-full flex-col space-y-4 p-8 pt-6'>
-      <div className="flex items-center justify-between">
-        <Heading
-          title="Telegram Bots"
-          description="Manage your Telegram bots"
-        />
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add New Bot
-            </Button>
-          </DialogTrigger>
+    <PageContainer>
+      <div className='flex h-full flex-col space-y-4 w-full'>
+        <div className="flex items-center justify-between">
+          <Heading
+            title="Telegram Bots"
+            description="Manage your Telegram bots"
+          />
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Add New Bot
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add New Bot</DialogTitle>
+                <DialogDescription>
+                  Enter your Telegram bot details
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleAddBot} className="space-y-4">
+                <div className='space-y-2'>
+                  <Label htmlFor='name'>Bot Name</Label>
+                  <Input
+                    id='name'
+                    value={newBotName}
+                    onChange={(e) => setNewBotName(e.target.value)}
+                    placeholder='Enter bot name'
+                    required
+                    disabled={isAddingBot}
+                  />
+                </div>
+                <div className='space-y-2'>
+                  <Label htmlFor='token'>Bot Token</Label>
+                  <Input
+                    id='token'
+                    value={newBotToken}
+                    onChange={(e) => setNewBotToken(e.target.value)}
+                    placeholder='Enter bot token'
+                    required
+                    disabled={isAddingBot}
+                  />
+                </div>
+                <div className='space-y-2'>
+                  <Label htmlFor='buttonText'>Button Text</Label>
+                  <Input
+                    id='buttonText'
+                    value={newBotButtonText}
+                    onChange={(e) => setNewBotButtonText(e.target.value)}
+                    placeholder='Enter button text'
+                    disabled={isAddingBot}
+                  />
+                </div>
+                <div className='space-y-2'>
+                  <Label htmlFor='infoText'>Info Text</Label>
+                  <Input
+                    id='infoText'
+                    value={newBotInfoText}
+                    onChange={(e) => setNewBotInfoText(e.target.value)}
+                    placeholder='Enter info text'
+                    disabled={isAddingBot}
+                  />
+                </div>
+                <div className='space-y-2'>
+                  <Label htmlFor='buttonPrivateMessage'>
+                    Private Message Button Text
+                  </Label>
+                  <Input
+                    id='buttonPrivateMessage'
+                    value={newBotButtonPrivateMessage}
+                    onChange={(e) =>
+                      setNewBotButtonPrivateMessage(e.target.value)
+                    }
+                    placeholder='Enter private message button text'
+                    disabled={isAddingBot}
+                  />
+                </div>
+                <div className='space-y-2'>
+                  <Label htmlFor='messagePrivateMessage'>
+                    Private Message Text
+                  </Label>
+                  <Input
+                    id='messagePrivateMessage'
+                    value={newBotMessagePrivateMessage}
+                    onChange={(e) =>
+                      setNewBotMessagePrivateMessage(e.target.value)
+                    }
+                    placeholder='Enter private message text'
+                    disabled={isAddingBot}
+                  />
+                </div>
+                <div className='space-y-2'>
+                  <Label htmlFor='messageOnClick'>Click Message</Label>
+                  <Input
+                    id='messageOnClick'
+                    value={newBotMessageOnClick}
+                    onChange={(e) => setNewBotMessageOnClick(e.target.value)}
+                    placeholder='Enter message to show on click'
+                    disabled={isAddingBot}
+                  />
+                </div>
+                <Button type='submit' className='w-full' disabled={isAddingBot}>
+                  {isAddingBot ? (
+                    <>
+                      <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                      Adding Bot...
+                    </>
+                  ) : (
+                    'Add Bot'
+                  )}
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+        <Separator />
+        <div className="rounded-lg border bg-card">
+          <div className="relative overflow-hidden">
+            <div className="overflow-x-auto">
+              <BotTable
+                data={bots}
+                onStartBot={handleStartBot}
+                onStopBot={handleStopBot}
+                onDeleteBot={handleDeleteBot}
+                onUpdateBot={handleUpdateBot}
+              />
+            </div>
+          </div>
+        </div>
+
+        <Dialog open={isInfoDialogOpen} onOpenChange={setIsInfoDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add New Bot</DialogTitle>
+              <DialogTitle>Important Information</DialogTitle>
               <DialogDescription>
-                Enter your Telegram bot details
+                Please follow these steps to ensure your bot works correctly:
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleAddBot} className="space-y-4">
+            <div className='space-y-4'>
               <div className='space-y-2'>
-                <Label htmlFor='name'>Bot Name</Label>
-                <Input
-                  id='name'
-                  value={newBotName}
-                  onChange={(e) => setNewBotName(e.target.value)}
-                  placeholder='Enter bot name'
-                  required
-                  disabled={isAddingBot}
-                />
+                <h4 className='font-medium'>Step 1: Get Author ID</h4>
+                <p className='text-muted-foreground text-sm'>
+                  Send the command{' '}
+                  <code className='bg-muted rounded px-1 py-0.5'>/start</code> to
+                  your bot in Telegram. The bot will respond with your Author ID.
+                  This ID is required for the button to work properly.
+                </p>
               </div>
               <div className='space-y-2'>
-                <Label htmlFor='token'>Bot Token</Label>
-                <Input
-                  id='token'
-                  value={newBotToken}
-                  onChange={(e) => setNewBotToken(e.target.value)}
-                  placeholder='Enter bot token'
-                  required
-                  disabled={isAddingBot}
-                />
+                <h4 className='font-medium'>Step 2: Complete Bot Settings</h4>
+                <p className='text-muted-foreground text-sm'>
+                  Make sure to fill in all the bot settings in the edit menu:
+                </p>
+                <ul className='text-muted-foreground list-inside list-disc space-y-1 text-sm'>
+                  <li>Button Text</li>
+                  <li>Info Text</li>
+                  <li>Author ID (from Step 1)</li>
+                  <li>Private Message Button Text</li>
+                  <li>Private Message Text</li>
+                  <li>Click Message</li>
+                </ul>
               </div>
-              <div className='space-y-2'>
-                <Label htmlFor='buttonText'>Button Text</Label>
-                <Input
-                  id='buttonText'
-                  value={newBotButtonText}
-                  onChange={(e) => setNewBotButtonText(e.target.value)}
-                  placeholder='Enter button text'
-                  disabled={isAddingBot}
-                />
-              </div>
-              <div className='space-y-2'>
-                <Label htmlFor='infoText'>Info Text</Label>
-                <Input
-                  id='infoText'
-                  value={newBotInfoText}
-                  onChange={(e) => setNewBotInfoText(e.target.value)}
-                  placeholder='Enter info text'
-                  disabled={isAddingBot}
-                />
-              </div>
-              <div className='space-y-2'>
-                <Label htmlFor='buttonPrivateMessage'>
-                  Private Message Button Text
-                </Label>
-                <Input
-                  id='buttonPrivateMessage'
-                  value={newBotButtonPrivateMessage}
-                  onChange={(e) =>
-                    setNewBotButtonPrivateMessage(e.target.value)
-                  }
-                  placeholder='Enter private message button text'
-                  disabled={isAddingBot}
-                />
-              </div>
-              <div className='space-y-2'>
-                <Label htmlFor='messagePrivateMessage'>
-                  Private Message Text
-                </Label>
-                <Input
-                  id='messagePrivateMessage'
-                  value={newBotMessagePrivateMessage}
-                  onChange={(e) =>
-                    setNewBotMessagePrivateMessage(e.target.value)
-                  }
-                  placeholder='Enter private message text'
-                  disabled={isAddingBot}
-                />
-              </div>
-              <div className='space-y-2'>
-                <Label htmlFor='messageOnClick'>Click Message</Label>
-                <Input
-                  id='messageOnClick'
-                  value={newBotMessageOnClick}
-                  onChange={(e) => setNewBotMessageOnClick(e.target.value)}
-                  placeholder='Enter message to show on click'
-                  disabled={isAddingBot}
-                />
-              </div>
-              <Button type='submit' className='w-full' disabled={isAddingBot}>
-                {isAddingBot ? (
-                  <>
-                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                    Adding Bot...
-                  </>
-                ) : (
-                  'Add Bot'
-                )}
+            </div>
+            <DialogFooter>
+              <Button onClick={() => setIsInfoDialogOpen(false)}>
+                I Understand
               </Button>
-            </form>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
-      <Separator />
-      <div className="rounded-lg border bg-card">
-        <div className="relative overflow-hidden">
-          <div className="overflow-x-auto">
-            <BotTable
-              data={bots}
-              onStartBot={handleStartBot}
-              onStopBot={handleStopBot}
-              onDeleteBot={handleDeleteBot}
-              onUpdateBot={handleUpdateBot}
-            />
-          </div>
-        </div>
-      </div>
-
-      <Dialog open={isInfoDialogOpen} onOpenChange={setIsInfoDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Important Information</DialogTitle>
-            <DialogDescription>
-              Please follow these steps to ensure your bot works correctly:
-            </DialogDescription>
-          </DialogHeader>
-          <div className='space-y-4'>
-            <div className='space-y-2'>
-              <h4 className='font-medium'>Step 1: Get Author ID</h4>
-              <p className='text-muted-foreground text-sm'>
-                Send the command{' '}
-                <code className='bg-muted rounded px-1 py-0.5'>/start</code> to
-                your bot in Telegram. The bot will respond with your Author ID.
-                This ID is required for the button to work properly.
-              </p>
-            </div>
-            <div className='space-y-2'>
-              <h4 className='font-medium'>Step 2: Complete Bot Settings</h4>
-              <p className='text-muted-foreground text-sm'>
-                Make sure to fill in all the bot settings in the edit menu:
-              </p>
-              <ul className='text-muted-foreground list-inside list-disc space-y-1 text-sm'>
-                <li>Button Text</li>
-                <li>Info Text</li>
-                <li>Author ID (from Step 1)</li>
-                <li>Private Message Button Text</li>
-                <li>Private Message Text</li>
-                <li>Click Message</li>
-              </ul>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button onClick={() => setIsInfoDialogOpen(false)}>
-              I Understand
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+    </PageContainer>
   );
 }

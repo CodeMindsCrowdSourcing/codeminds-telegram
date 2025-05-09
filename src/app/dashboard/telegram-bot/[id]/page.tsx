@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { use } from 'react';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
+import PageContainer from '@/components/layout/page-container';
 
 export default function BotUsersPage({
   params
@@ -70,27 +71,29 @@ export default function BotUsersPage({
   }
 
   return (
-    <div className='flex h-full flex-col space-y-4 p-8 pt-6'>
-      <div className='flex items-center justify-between'>
-        <div className='flex items-center gap-4'>
-          <Button
-            variant='ghost'
-            onClick={() => router.back()}
-            className='h-8 w-8 p-0'
-          >
-            <ArrowLeft className='h-4 w-4' />
-            <span className='sr-only'>Back</span>
-          </Button>
-          <Heading
-            title='Bot Users'
-            description='View all users who have interacted with your bot'
-          />
+    <PageContainer>
+      <div className='flex h-full flex-col space-y-4 w-full'>
+        <div className='flex items-center justify-between'>
+          <div className='flex items-center gap-4'>
+            <Button
+              variant='ghost'
+              onClick={() => router.back()}
+              className='h-8 w-8 p-0'
+            >
+              <ArrowLeft className='h-4 w-4' />
+              <span className='sr-only'>Back</span>
+            </Button>
+            <Heading
+              title='Bot Users'
+              description='View all users who have interacted with your bot'
+            />
+          </div>
+        </div>
+        <Separator />
+        <div className='min-h-[400px] flex-1'>
+          <UserTable data={users} />
         </div>
       </div>
-      <Separator />
-      <div className='min-h-[400px] flex-1'>
-        <UserTable data={users} />
-      </div>
-    </div>
+    </PageContainer>
   );
 }

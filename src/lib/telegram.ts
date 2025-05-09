@@ -7,6 +7,7 @@ import type {
 import { TelegramUserModel } from '@/models/telegram-user';
 import connectToDatabase from '@/lib/mongodb';
 import { TelegramBotModel } from '@/models/telegram-bot';
+import TelegramGroup from '@/models/telegram-group';
 
 const TELEGRAM_API_BASE = 'https://api.telegram.org/bot';
 
@@ -159,6 +160,13 @@ async function handleMyChatMember(bot: TelegramBot, update: TelegramUpdate) {
   // Check if bot was just added as administrator
   if (newStatus === 'administrator' && oldStatus !== 'administrator') {
     try {
+      // Сохраняем группу в базе
+      await TelegramGroup.findOneAndUpdate(
+        { botId: bot.id, groupId: chatId },
+        { botId: bot.id, groupId: chatId, groupName: myChatMember.chat.title },
+        { upsert: true, new: true }
+      );
+
       // Create inline keyboard with callback data
       const keyboard: InlineKeyboardMarkup = {
         inline_keyboard: [
@@ -208,6 +216,53 @@ async function ensureSingleInstance(bot: TelegramBot): Promise<void> {
       logger.info('Previous bot instance stopped');
     }
     botPolling.delete(bot.id);
+  }
+}
+
+async function processScheduledMessages(bot: TelegramBot) {
+  await connectToDatabase();
+  const groups = await TelegramGroup.find({ botId: bot.id });
+
+  for (const group of groups) {
+    let updated = false;
+    for (const msg of group.messages) {
+      if (!msg.enabled) continue;
+      const now = new Date();
+      const last = msg.lastSentAt ? new Date(msg.lastSentAt) : null;
+      const shouldSend =
+        !last || (now.getTime() - last.getTime()) / 1000 >= msg.delay;
+
+      if (shouldSend) {
+        try {
+          let reply_markup = undefined;
+          if (msg.buttonText && msg.buttonUrl) {
+            reply_markup = {
+              inline_keyboard: [[{ text: msg.buttonText, url: msg.buttonUrl }]]
+            };
+          }
+          if (msg.video) {
+            await sendVideo(bot.token, group.groupId, msg.video, {
+              caption: msg.text,
+              reply_markup
+            });
+          } else if (msg.image) {
+            await sendPhoto(bot.token, group.groupId, msg.image, {
+              caption: msg.text,
+              reply_markup
+            });
+          } else {
+            await sendMessage(bot.token, group.groupId, msg.text, reply_markup);
+          }
+          msg.lastSentAt = now;
+          updated = true;
+        } catch (e) {
+          // ignore send errors
+        }
+      }
+    }
+    if (updated) {
+      await group.save();
+    }
   }
 }
 
@@ -292,6 +347,8 @@ export async function startBot(bot: TelegramBot): Promise<void> {
             if (updates.result.length > 0) {
               offset = updates.result[updates.result.length - 1].update_id + 1;
             }
+
+            await processScheduledMessages(bot);
           } catch (error) {
             retryCount++;
             const errorMessage =

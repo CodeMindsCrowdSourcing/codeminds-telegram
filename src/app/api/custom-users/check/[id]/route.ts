@@ -19,10 +19,12 @@ async function processBatch(users: any[], client: TelegramClient) {
 
   for (const user of users) {
     try {
+      const cleanPhone = user.phone.replace(/\D/g, '');
+      
       // Check if user exists in Telegram using ResolvePhone
       const result = await client.invoke(
         new Api.contacts.ResolvePhone({
-          phone: user.phone.replace(/\D/g, '')
+          phone: cleanPhone
         })
       );
 
