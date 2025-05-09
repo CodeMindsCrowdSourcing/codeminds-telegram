@@ -3,6 +3,7 @@ import {
   Table
 } from '@tanstack/react-table';
 import type * as React from 'react';
+import { Loader2 } from 'lucide-react';
 
 import {
   Table as TableComponent,
@@ -17,16 +18,23 @@ import { getCommonPinningStyles } from '@/lib/data-table';
 interface DataTableProps<TData> {
   table: Table<TData>;
   children?: React.ReactNode;
+  isLoading?: boolean;
 }
 
 export function DataTable<TData>({
   table,
-  children
+  children,
+  isLoading
 }: DataTableProps<TData>) {
   return (
     <div className="flex flex-col">
       {children}
       <div className="relative">
+        {isLoading && (
+          <div className='absolute inset-0 bg-background/50 flex items-center justify-center z-10'>
+            <Loader2 className='h-8 w-8 animate-spin text-primary' />
+          </div>
+        )}
         <TableComponent>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

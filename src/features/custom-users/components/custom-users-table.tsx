@@ -16,7 +16,7 @@ import {
   Send,
   Search
 } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -42,22 +42,14 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DataTablePagination } from '@/components/ui/table/data-table-pagination';
-import { CheckProgress } from '@/components/custom-users/check-progress';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from '@/components/ui/card';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, Info } from 'lucide-react';
+import { Info } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger
 } from '@/components/ui/tooltip';
+import { CheckProgress } from '@/components/custom-users/check-progress';
 
 interface CustomUser {
   _id: string;
@@ -126,7 +118,6 @@ function AddUserDialog({
       });
       onUserAdded(data.user);
     } catch (error) {
-      console.error('Error adding user:', error);
       toast.error('An unexpected error occurred');
     } finally {
       setIsLoading(false);
@@ -655,13 +646,19 @@ export const columns = ({
   }
 ];
 
-const BATCH_DELAY = 180000; // 3 minutes in milliseconds
 
 export function CustomUsersTable({
   data: initialData,
   onExportUsers
 }: CustomUsersTableProps) {
-  const [data, setData] = useState(initialData);
+  const [data, setData] = useState<CustomUser[]>(initialData);
+  const [isLoading, setIsLoading] = useState(false);
+  const [pagination, setPagination] = useState({
+    pageIndex: 0,
+    pageSize: 10,
+    total: 0,
+    totalPages: 0
+  });
   const [isSendMessageOpen, setIsSendMessageOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -675,50 +672,103 @@ export function CustomUsersTable({
   const [shouldContinueChecking, setShouldContinueChecking] = useState(true);
   const abortControllerRef = useRef<AbortController | null>(null);
   const [waitTimeLeft, setWaitTimeLeft] = useState<number | null>(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [timeUntilNextBatch, setTimeUntilNextBatch] = useState<number | undefined>();
 
-  const getBatchSize = () => {
-    if (typeof window !== 'undefined') {
-      const savedSize = localStorage.getItem('verificationBatchSize');
-      return savedSize ? parseInt(savedSize) : 30;
-    }
-    return 30;
-  };
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
+  // Check verification status on mount
   useEffect(() => {
-    const savedState = localStorage.getItem('checkingState');
-    if (savedState) {
-      const state = JSON.parse(savedState);
-      if (state.isChecking) {
-        localStorage.removeItem('checkingState');
-        setIsChecking(false);
-        setCheckProgress({
-          total: 0,
-          checked: 0,
-          found: 0
+    const checkStatus = async () => {
+      try {
+        const response = await fetch('/api/custom-users/check/background', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ action: 'status' })
         });
+
+        const data = await response.json();
+
+        if (response.ok && data.isRunning) {
+          setIsChecking(true);
+          setShouldContinueChecking(true);
+          setCheckProgress({
+            total: data.total,
+            checked: data.checked,
+            found: data.found
+          });
+
+          // Start polling for updates
+          startPolling();
+        }
+      } catch (error) {
       }
-    }
+    };
+
+    checkStatus();
+
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
+    };
   }, []);
 
-  useEffect(() => {
-    if (isChecking && shouldContinueChecking) {
-      localStorage.setItem(
-        'checkingState',
-        JSON.stringify({
-          isChecking,
-          progress: checkProgress
-        })
-      );
-    } else {
-      localStorage.removeItem('checkingState');
+  const startPolling = () => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
     }
-  }, [isChecking, checkProgress, shouldContinueChecking]);
+
+    pollIntervalRef.current = setInterval(async () => {
+      try {
+        const statusResponse = await fetch('/api/custom-users/check/background', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ action: 'status' })
+        });
+
+        const statusData = await statusResponse.json();
+
+        if (!statusResponse.ok) {
+          throw new Error(statusData.error || 'Failed to get status');
+        }
+
+        if (!statusData.isRunning) {
+          if (pollIntervalRef.current) {
+            clearInterval(pollIntervalRef.current);
+            pollIntervalRef.current = null;
+          }
+          setIsChecking(false);
+          setShouldContinueChecking(false);
+          setCheckProgress({
+            total: 0,
+            checked: 0,
+            found: 0
+          });
+          setTimeUntilNextBatch(undefined);
+          return;
+        }
+
+        setCheckProgress({
+          total: statusData.total,
+          checked: statusData.checked,
+          found: statusData.found
+        });
+        setTimeUntilNextBatch(statusData.timeUntilNextBatch);
+      } catch (error) {
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+        }
+        setIsChecking(false);
+        setShouldContinueChecking(false);
+        setTimeUntilNextBatch(undefined);
+      }
+    }, 1000);
+  };
 
   const handleUserAdded = (user: CustomUser) => {
     setData((prev) => [user, ...prev]);
@@ -739,132 +789,156 @@ export function CustomUsersTable({
     setIsSendMessageOpen(true);
   };
 
-  const handleCheckNotFound = async () => {
-    const notFoundUsers = data.filter((user) => !user.isFound && !user.checked);
-    if (notFoundUsers.length === 0) {
-      toast.error('No users to check');
-      return;
-    }
+  // Memoize table columns to prevent unnecessary re-renders
+  const tableColumns = useMemo(() => columns({
+    onUserDeleted: handleUserDeleted,
+    onUserUpdated: handleUserUpdated,
+    onSendMessage: handleSendMessage
+  }), []);
 
-    setShouldContinueChecking(true);
-    setIsChecking(true);
-    setCheckProgress({
-      total: notFoundUsers.length,
-      checked: 0,
-      found: 0
-    });
-
+  const fetchUsers = useCallback(async (page: number, pageSize: number) => {
     try {
-      const batchSize = getBatchSize();
-      const batches = [];
-      for (let i = 0; i < notFoundUsers.length; i += batchSize) {
-        batches.push(notFoundUsers.slice(i, i + batchSize));
+      setIsLoading(true);
+      const response = await fetch(
+        `/api/custom-users?page=${page + 1}&pageSize=${pageSize}`
+      );
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to fetch users');
       }
 
-      for (const batch of batches) {
-        if (!shouldContinueChecking) {
-          setWaitTimeLeft(null);
-          localStorage.removeItem('checkingState');
-          break;
-        }
-
-        try {
-          // Use the first user's ID as the endpoint parameter
-          const response = await fetch(
-            `/api/custom-users/check/${batch[0]._id}`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ batchSize: batch.length })
-            }
-          );
-
-          const data = await response.json();
-
-          if (!response.ok) {
-            throw new Error(data.error || 'Failed to check users');
-          }
-
-          // Update the UI with the results
-          if (data.users) {
-            data.users.forEach((user: CustomUser) => {
-              handleUserUpdated(user);
-              if (user.isFound) {
-                setCheckProgress((prev) => ({
-                  ...prev,
-                  found: prev.found + 1
-                }));
-              }
-            });
-          }
-
-          setCheckProgress((prev) => ({
-            ...prev,
-            checked: prev.checked + batch.length
-          }));
-
-          if (
-            batches.indexOf(batch) < batches.length - 1 &&
-            shouldContinueChecking
-          ) {
-            const delaySeconds = Math.ceil(BATCH_DELAY / 1000);
-            setWaitTimeLeft(delaySeconds);
-            toast.info(`Waiting ${delaySeconds} seconds before next batch...`);
-
-            let waitStartTime = Date.now();
-            while (Date.now() - waitStartTime < BATCH_DELAY) {
-              if (!shouldContinueChecking) {
-                setWaitTimeLeft(null);
-                localStorage.removeItem('checkingState');
-                break;
-              }
-              const timeLeft = Math.ceil(
-                (BATCH_DELAY - (Date.now() - waitStartTime)) / 1000
-              );
-              setWaitTimeLeft(timeLeft);
-              await new Promise((resolve) => setTimeout(resolve, 1000));
-            }
-            setWaitTimeLeft(null);
-          }
-        } catch (error) {
-          setWaitTimeLeft(null);
-          if (
-            error instanceof Error &&
-            error.message === 'Check stopped by user'
-          ) {
-            localStorage.removeItem('checkingState');
-            break;
-          }
-          throw error;
-        }
-      }
+      setData(result.users);
+      setPagination({
+        pageIndex: page,
+        pageSize,
+        total: result.pagination.total,
+        totalPages: result.pagination.totalPages
+      });
     } catch (error) {
-      setWaitTimeLeft(null);
-      console.error('Check process error:', error);
-      toast.error('Error in check process');
+      toast.error('Failed to fetch users');
     } finally {
-      setWaitTimeLeft(null);
+      setIsLoading(false);
+      setIsInitialLoad(false);
+    }
+  }, []);
+
+  // Only fetch on initial mount
+  useEffect(() => {
+    if (isInitialLoad) {
+      fetchUsers(0, pagination.pageSize);
+    }
+  }, [isInitialLoad, fetchUsers, pagination.pageSize]);
+
+  // Create table instance
+  const table = useReactTable<CustomUser>({
+    data,
+    columns: tableColumns,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    manualPagination: true,
+    pageCount: pagination.totalPages,
+    state: {
+      pagination: {
+        pageIndex: pagination.pageIndex,
+        pageSize: pagination.pageSize
+      }
+    },
+    onPaginationChange: (updater) => {
+      const newPagination = typeof updater === 'function'
+        ? updater({ pageIndex: pagination.pageIndex, pageSize: pagination.pageSize })
+        : updater;
+      fetchUsers(newPagination.pageIndex, newPagination.pageSize);
+    }
+  });
+
+  const getBatchSize = () => {
+    return parseInt(localStorage.getItem('verificationBatchSize') || '30');
+  };
+
+  const getDelayTime = () => {
+    return parseInt(localStorage.getItem('verificationDelayTime') || '180') * 1000;
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleCheckNotFound = async () => {
+    try {
+      const response = await fetch('/api/custom-users/check/background', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          action: 'start',
+          batchSize: getBatchSize(),
+          delayTime: parseInt(localStorage.getItem('verificationDelayTime') || '180')
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to start verification');
+      }
+
+      setShouldContinueChecking(true);
+      setIsChecking(true);
+      setCheckProgress({
+        total: data.total,
+        checked: 0,
+        found: 0
+      });
+
+      // Start polling for status updates
+      startPolling();
+
+    } catch (error) {
+      toast.error('Error in check process');
       setIsChecking(false);
       setShouldContinueChecking(false);
-      abortControllerRef.current = null;
-      localStorage.removeItem('checkingState');
     }
   };
 
-  const handleStopChecking = () => {
-    setShouldContinueChecking(false);
-    setWaitTimeLeft(null);
-    abortControllerRef.current?.abort();
-    setIsChecking(false);
-    setCheckProgress({
-      total: 0,
-      checked: 0,
-      found: 0
-    });
-    localStorage.removeItem('checkingState');
-    toast.info('Check stopped');
+  const handleStopChecking = async () => {
+    try {
+      const response = await fetch('/api/custom-users/check/background', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ action: 'stop' })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to stop verification');
+      }
+
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+
+      setShouldContinueChecking(false);
+      setWaitTimeLeft(null);
+      abortControllerRef.current?.abort();
+      setIsChecking(false);
+      setCheckProgress({
+        total: 0,
+        checked: 0,
+        found: 0
+      });
+      localStorage.removeItem('checkingState');
+      toast.info('Check stopped');
+    } catch (error) {
+      toast.error('Failed to stop check');
+    }
   };
 
   const handleDeleteSelected = async () => {
@@ -918,37 +992,21 @@ export function CustomUsersTable({
   };
 
   const handleDeleteCheckedNotFound = async () => {
-    const checkedNotFoundUsers = data.filter(
-      (user) => user.checked && !user.isFound
-    );
-    if (checkedNotFoundUsers.length === 0) {
-      toast.error('No checked and not found users to delete');
-      return;
-    }
-
     try {
-      const response = await fetch('/api/custom-users/delete-many', {
+      const response = await fetch('/api/custom-users/delete-not-found', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          userIds: checkedNotFoundUsers.map((user) => user._id)
-        })
+        headers: { 'Content-Type': 'application/json' }
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Failed to delete users');
+        throw new Error(data.error || 'Failed to delete users');
       }
 
-      const data = await response.json();
-      setData((prev) =>
-        prev.filter(
-          (user) =>
-            !checkedNotFoundUsers.some((selected) => selected._id === user._id)
-        )
-      );
       toast.success(`Successfully deleted ${data.deleted} users`);
+      // Обновить таблицу
+      fetchUsers(pagination.pageIndex, pagination.pageSize);
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : 'Failed to delete users'
@@ -956,22 +1014,13 @@ export function CustomUsersTable({
     }
   };
 
-  const tableColumns = columns({
-    onUserDeleted: handleUserDeleted,
-    onUserUpdated: handleUserUpdated,
-    onSendMessage: handleSendMessage
-  });
-  const table = useReactTable<CustomUser>({
-    data,
-    columns: tableColumns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: {
-      pagination: {
-        pageSize: 10
-      }
+  // После завершения проверки автоматически обновлять пользователей
+  useEffect(() => {
+    if (!isChecking && !isInitialLoad) {
+      fetchUsers(pagination.pageIndex, pagination.pageSize);
     }
-  });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isChecking]);
 
   return (
     <div className='space-y-4'>
@@ -1053,18 +1102,37 @@ export function CustomUsersTable({
         </div>
       </div>
 
-      {(isChecking || checkProgress.checked > 0) && (
+      {isChecking && (
         <CheckProgress
           total={checkProgress.total}
           checked={checkProgress.checked}
           found={checkProgress.found}
           isChecking={isChecking}
+          timeUntilNextBatch={timeUntilNextBatch}
         />
       )}
 
       <div className='rounded-md border'>
-        <div className='h-[500px] overflow-auto'>
-          <DataTable<CustomUser> table={table} />
+        <div className='min-h-[500px] relative'>
+          {isChecking ? (
+            <div className='absolute inset-0 flex flex-col items-center justify-center gap-2'>
+              <div className='h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent' />
+              <div className='text-muted-foreground text-lg'>Checking users...</div>
+            </div>
+          ) : isInitialLoad ? (
+            <div className='absolute inset-0 flex items-center justify-center'>
+              <div className='h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent' />
+            </div>
+          ) : (
+            <>
+              <div className='flex justify-end mb-2'>
+                <Button variant='outline' size='sm' onClick={() => fetchUsers(pagination.pageIndex, pagination.pageSize)}>
+                  Refresh
+                </Button>
+              </div>
+              <DataTable<CustomUser> table={table} isLoading={isLoading} />
+            </>
+          )}
         </div>
         <div className='border-t p-4'>
           <DataTablePagination table={table} />

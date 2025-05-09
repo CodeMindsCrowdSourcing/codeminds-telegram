@@ -24,18 +24,10 @@ export async function POST(req: Request) {
       );
     }
 
-    const { users } = await req.json();
-    if (!Array.isArray(users)) {
-      return NextResponse.json(
-        { error: 'Invalid users data' },
-        { status: 400 }
-      );
-    }
-
-    // Delete not found users
+    // Удаляем всех checked: true, isFound: false для этого пользователя
     const result = await CustomUserModel.deleteMany({
-      _id: { $in: users.map(u => u._id) },
       userId: user._id,
+      checked: true,
       isFound: false
     });
 

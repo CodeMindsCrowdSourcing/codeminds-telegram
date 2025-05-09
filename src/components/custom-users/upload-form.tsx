@@ -1,14 +1,12 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DataTable } from "@/components/ui/table/data-table";
 import { toast } from "sonner";
 import { columns } from "@/app/dashboard/custom-users/columns";
 import { useReactTable, getCoreRowModel, getPaginationRowModel } from "@tanstack/react-table";
-import { Button } from "@/components/ui/button";
-import { Save, Trash2, Loader2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 
@@ -20,9 +18,9 @@ export function UploadForm({ isConnected }: UploadFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<any[]>([]);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [file, setFile] = useState<File | null>(null);
   const [processedRows, setProcessedRows] = useState(0);
   const [totalRows, setTotalRows] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const table = useReactTable({
     data: results,
@@ -40,8 +38,6 @@ export function UploadForm({ isConnected }: UploadFormProps) {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
 
-    setFile(selectedFile);
-    setUploadProgress(0);
     setResults([]);
     setProcessedRows(0);
     setTotalRows(0);
@@ -79,11 +75,10 @@ export function UploadForm({ isConnected }: UploadFormProps) {
         `Uploaded ${data.stats.new} new users, skipped ${data.stats.duplicates} duplicates`
       );
     } catch (error) {
-      console.error('Upload error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to upload file');
-      setFile(null);
     } finally {
       setIsLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -94,6 +89,7 @@ export function UploadForm({ isConnected }: UploadFormProps) {
           <Label htmlFor="csvFile">CSV File</Label>
           <div className="flex items-center gap-4">
             <Input
+              ref={fileInputRef}
               id="csvFile"
               type="file"
               accept=".csv"
@@ -138,7 +134,6 @@ export function UploadForm({ isConnected }: UploadFormProps) {
             {isLoading && (
               <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm">
                 <div className="text-center space-y-4 p-4">
-                  <Loader2 className="h-8 w-8 animate-spin mx-auto" />
                   <p className="text-sm font-medium">
                     Processing large file, please wait...
                     <br />
