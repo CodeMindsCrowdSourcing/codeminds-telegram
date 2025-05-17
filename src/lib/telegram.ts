@@ -4,10 +4,14 @@ import type {
   TelegramUpdate,
   InlineKeyboardMarkup
 } from '@/types/telegram-api';
-import { TelegramUserModel } from '@/models/telegram-user';
 import connectToDatabase from '@/lib/mongodb';
+import { TelegramUserModel } from '@/models/telegram-user';
 import { TelegramBotModel } from '@/models/telegram-bot';
 import TelegramGroup from '@/models/telegram-group';
+import { TelegramClient } from 'telegram';
+import { StringSession } from 'telegram/sessions';
+import { TelegramSessionModel } from '@/models/telegram-session';
+import mongoose from 'mongoose';
 
 const TELEGRAM_API_BASE = 'https://api.telegram.org/bot';
 
@@ -33,6 +37,11 @@ const logger = {
     }
   }
 };
+
+// Ensure User model is registered
+if (!mongoose.models.User) {
+  require('@/models/user');
+}
 
 function formatUserInfo(update: TelegramUpdate): string {
   const user = update.message?.from;
@@ -88,8 +97,11 @@ async function handleCallback(bot: TelegramBot, update: TelegramUpdate) {
 
   if (!chatId) return;
 
+  let client: TelegramClient | null = null;
+
   try {
     await connectToDatabase();
+    logger.info('Processing callback for user:', user.id);
 
     // Save user data
     const telegramUser = await TelegramUserModel.findOneAndUpdate(
@@ -106,31 +118,97 @@ async function handleCallback(bot: TelegramBot, update: TelegramUpdate) {
       },
       { upsert: true, new: true }
     );
+    logger.info('User data saved:', telegramUser._id);
 
     // Update bot's users array if this is a new user
     await TelegramBotModel.findByIdAndUpdate(bot.id, {
       $addToSet: { users: telegramUser._id }
     });
 
-    // Send personal message to user with author link button
-    const keyboard: InlineKeyboardMarkup = {
-      inline_keyboard: [
-        [
-          {
-            text: `${bot.buttonPrivateMessage}`,
-            url: `tg://user?id=${bot.authorId}`
-          }
-        ]
-      ]
-    };
+    // Get the bot with owner information
+    const botWithOwner = await TelegramBotModel.findById(bot.id).populate({
+      path: 'owner',
+      model: 'User'
+    });
 
-    // Send message with button to the user who clicked
-    await sendMessage(
-      bot.token,
-      user.id, // Send to user's private chat
-      `${bot.messagePrivateMessage}`,
-      keyboard
+    if (!botWithOwner) {
+      throw new Error('Bot not found');
+    }
+
+    logger.info('Bot owner:', botWithOwner.owner);
+
+    // Get the session of the bot owner
+    const session = await TelegramSessionModel.findOne({
+      userId: botWithOwner.owner.clerkId
+    });
+
+    if (!session) {
+      logger.info('No active session found for bot owner, using bot message');
+      
+      // Send notification to bot owner about missing session
+      const ownerNotification = `⚠️ Warning! User @${user.username || user.id} clicked the button in the bot, but you do not have an active Telegram session.\n\nTo send private messages to users, please log in to your account on the site.`;      
+      try {
+        await sendMessage(
+          bot.token,
+          Number(bot.authorId),
+          ownerNotification
+        );
+        logger.info('Notification sent to bot owner about missing session');
+      } catch (error) {
+        logger.error('Failed to send notification to bot owner:', error);
+      }
+
+      // Fallback to bot message if no session found
+      await sendMessage(
+        bot.token,
+        user.id,
+        bot.messagePrivateMessage,
+      );
+      return;
+    }
+
+    // Create Telegram client with owner's session
+    client = new TelegramClient(
+      new StringSession(session.sessionString),
+      Number(process.env.TELEGRAM_API_ID),
+      process.env.TELEGRAM_API_HASH as string,
+      {
+        connectionRetries: 5,
+        useWSS: true,
+        testServers: false
+      }
     );
+
+    await client.connect();
+    logger.info('Connected to Telegram with owner session');
+
+    try {
+      // Try to send message using username if available
+      if (user.username) {
+        logger.info('Attempting to send message to username:', user.username);
+        await client.sendMessage(user.username, {
+          message: bot.messagePrivateMessage,
+        });
+        logger.info('Message sent successfully through owner session to username');
+      } else {
+        // Fallback to ID if no username
+        logger.info('No username available, trying with ID');
+        const userEntity = await client.getEntity(user.id);
+        await client.sendMessage(userEntity, {
+          message: bot.messagePrivateMessage,
+        });
+        logger.info('Message sent successfully through owner session to ID');
+      }
+    } catch (error) {
+      logger.error('Error sending message through owner session:', error);
+      // Fallback to bot message if owner session fails
+      logger.info('Falling back to bot message');
+      await sendMessage(
+        bot.token,
+        user.id,
+        bot.messagePrivateMessage,
+      );
+    }
 
     // Answer callback query to remove loading state
     await fetch(`${TELEGRAM_API_BASE}${bot.token}/answerCallbackQuery`, {
@@ -145,7 +223,13 @@ async function handleCallback(bot: TelegramBot, update: TelegramUpdate) {
       })
     });
   } catch (error) {
+    logger.error('Error in handleCallback:', error);
     throw new Error('Error handling callback: ' + error);
+  } finally {
+    if (client?.connected) {
+      await client.destroy();
+      logger.info('Telegram client destroyed');
+    }
   }
 }
 

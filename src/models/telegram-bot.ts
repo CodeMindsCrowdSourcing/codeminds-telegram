@@ -9,7 +9,6 @@ interface ITelegramBot extends Document {
   infoText: string;
   authorId: string;
   linkImage: string;
-  buttonPrivateMessage: string;
   messagePrivateMessage: string;
   messageOnClick: string;
   users: mongoose.Schema.Types.ObjectId[];
@@ -52,10 +51,6 @@ const telegramBotSchema = new mongoose.Schema({
     type: String,
     default: '/images/strange.jpg',
   },
-  buttonPrivateMessage: {
-    type: String,
-    default: '👤 Open profile',
-  },
   messagePrivateMessage: {
     type: String,
     default: 'Thank you for your interest! Click the button below to open the author\'s profile:',
@@ -84,4 +79,4 @@ telegramBotSchema.pre('save', function(this: ITelegramBot, next: () => void) {
   next();
 });
 
-export const TelegramBotModel = mongoose.models.TelegramBot || mongoose.model<ITelegramBot>('TelegramBot', telegramBotSchema); 
+export const TelegramBotModel = mongoose.models.TelegramBot || mongoose.model<ITelegramBot>('TelegramBot', telegramBotSchema);

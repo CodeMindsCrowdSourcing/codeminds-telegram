@@ -75,11 +75,18 @@ const ProfileCreateForm: React.FC<ProfileFormType> = ({ initialData }) => {
     name: 'jobs'
   });
 
-  const processForm: SubmitHandler<ProfileFormValues> = (data) => {
-    // Process form data
-    setData(data);
-    // api call and reset
-    // form.reset();
+  const processForm: SubmitHandler<ProfileFormValues> = async (data) => {
+    try {
+      setLoading(true);
+      // Process form data
+      setData(data);
+      // Add your API call here
+      // await axios.post('/api/profile', data);
+    } catch (error) {
+      console.error('Error submitting form:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   type FieldName = keyof ProfileFormValues;

@@ -75,7 +75,6 @@ function ActionCell({
     infoText: bot.infoText,
     authorId: bot.authorId,
     linkImage: bot.linkImage,
-    buttonPrivateMessage: bot.buttonPrivateMessage,
     messagePrivateMessage: bot.messagePrivateMessage,
     messageOnClick: bot.messageOnClick,
     token: bot.token,
@@ -109,7 +108,6 @@ function ActionCell({
       infoText: bot.infoText,
       authorId: bot.authorId,
       linkImage: bot.linkImage,
-      buttonPrivateMessage: bot.buttonPrivateMessage,
       messagePrivateMessage: bot.messagePrivateMessage,
       messageOnClick: bot.messageOnClick,
       token: bot.token,
@@ -488,22 +486,6 @@ function ActionCell({
             )}
 
             <div className='space-y-2'>
-              <Label htmlFor='buttonPrivateMessage'>
-                Private Message Button Text
-              </Label>
-              <Input
-                id='buttonPrivateMessage'
-                value={editData.buttonPrivateMessage}
-                onChange={(e) =>
-                  setEditData({
-                    ...editData,
-                    buttonPrivateMessage: e.target.value
-                  })
-                }
-                placeholder='Enter private message button text'
-              />
-            </div>
-            <div className='space-y-2'>
               <Label htmlFor='messagePrivateMessage'>
                 Private Message Text
               </Label>
@@ -706,7 +688,7 @@ function ActionCell({
             <div>
               <label className="block mb-1">Media (image or video, optional)</label>
               <Input type="file" accept="image/*,video/*" ref={fileInputRef} onChange={handleMediaChange} disabled={isAddingMessage} />
-              {messageImage && <img src={messageImage} alt="preview" className="mt-2 max-h-32" />}
+              {messageImage && <Image src={messageImage} alt="preview" width={100} height={100} className="mt-2 max-h-32 object-cover" />}
               {messageVideo && <video src={messageVideo} controls className="mt-2 max-h-32" />}
             </div>
             <div>

@@ -15,19 +15,42 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CustomUserModel } from '@/models/custom-user';
 import { UserModel } from '@/models/user';
 import { CustomUsersTable } from '@/features/custom-users/components/custom-users-table';
-import { toast } from 'sonner';
 import connectDB from '@/lib/mongodb';
 import { SettingsForm } from '@/components/custom-users/settings-form';
 import { LogsViewer } from '@/components/custom-users/logs-viewer';
 import PageContainer from '@/components/layout/page-container';
+import { Button } from '@/components/ui/button';
+import { DisconnectButton } from '@/components/custom-users/disconnect-button';
 
 export default async function CustomUsersPage() {
   await connectDB();
   const { userId } = await auth();
+  
   const session = userId
     ? await TelegramSessionModel.findOne({ userId })
     : null;
+  
   const isConnected = !!session;
+
+  const handleUpdateSession = async () => {
+    'use server';
+    try {
+      const response = await fetch('/api/telegram/update-sessions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update session');
+      }
+
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to update session:', error);
+    }
+  };
 
   // Get user's custom users
   const user = userId ? await UserModel.findOne({ clerkId: userId }) : null;
@@ -70,14 +93,28 @@ export default async function CustomUsersPage() {
       link.download = `custom-users-${new Date().toISOString()}.csv`;
       link.click();
     } catch (error) {
-      toast.error('Failed to export users');
+      console.error('Failed to export users:', error);
     }
   };
 
   return (
     <PageContainer>
       <div className='space-y-6 w-full px-4'>
-        <h1 className='text-2xl font-bold'>Custom Users</h1>
+        <div className="flex justify-between items-center">
+          <h1 className='text-2xl font-bold'>Custom Users</h1>
+          <div className="flex gap-2">
+            {!isConnected && session && (
+              <form action={handleUpdateSession}>
+                <Button variant="outline" type="submit">
+                  Update Session
+                </Button>
+              </form>
+            )}
+            {isConnected && (
+              <DisconnectButton />
+            )}
+          </div>
+        </div>
 
         {!isConnected && (
           <Alert>
