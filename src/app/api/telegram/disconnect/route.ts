@@ -10,37 +10,25 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { sessionString, phone } = await req.json();
-    if (!sessionString || !phone) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
-    }
-
     await connectDB();
 
-    // Update or create session
+    // Update session to inactive
     await TelegramSessionModel.findOneAndUpdate(
       { userId },
       {
-        userId,
-        phone,
-        sessionString,
         updatedAt: new Date()
-      },
-      { upsert: true, new: true }
+      }
     );
 
     return NextResponse.json({
       success: true,
-      message: 'Session saved successfully'
+      message: 'Disconnected successfully'
     });
   } catch (error) {
-    console.error('Error saving session:', error);
+    console.error('Error disconnecting:', error);
     return NextResponse.json(
-      { error: 'Failed to save session' },
+      { error: 'Failed to disconnect' },
       { status: 500 }
     );
   }
-} 
+}
