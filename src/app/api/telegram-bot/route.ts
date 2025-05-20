@@ -91,7 +91,6 @@ export async function POST(request: Request) {
       infoText: data.infoText,
       authorId: data.authorId,
       linkImage: data.linkImage,
-      buttonPrivateMessage: data.buttonPrivateMessage,
       messagePrivateMessage: data.messagePrivateMessage,
       messageOnClick: data.messageOnClick,
       users: []

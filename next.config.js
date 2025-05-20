@@ -12,7 +12,8 @@ const nextConfig = {
         hostname: 'api.slingacademy.com',
         port: ''
       }
-    ]
+    ],
+    domains: ['res.cloudinary.com'],
   },
   transpilePackages: ['geist']
 };

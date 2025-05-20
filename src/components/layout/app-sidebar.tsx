@@ -48,9 +48,9 @@ import { Icons } from '../icons';
 import { OrgSwitcher } from '../org-switcher';
 
 const tenants = [
-  { id: '1', name: 'Acme Inc' },
-  { id: '2', name: 'Beta Corp' },
-  { id: '3', name: 'Gamma Ltd' }
+  { id: '1', name: 'Test' },
+  { id: '2', name: 'Develop' },
+  { id: '3', name: 'Deploy' }
 ];
 
 export default function AppSidebar() {

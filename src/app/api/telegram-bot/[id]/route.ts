@@ -84,9 +84,6 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
           ...(body.infoText && { infoText: body.infoText }),
           ...(body.authorId && { authorId: body.authorId }),
           ...(body.linkImage && { linkImage: body.linkImage }),
-          ...(body.buttonPrivateMessage && {
-            buttonPrivateMessage: body.buttonPrivateMessage
-          }),
           ...(body.messagePrivateMessage && {
             messagePrivateMessage: body.messagePrivateMessage
           }),

@@ -37,8 +37,13 @@ export function SettingsForm() {
         return;
       }
 
-      if (isNaN(delay) || delay < 0) {
+      if (isNaN(delay) || delay < 1) {
         toast.error('Please enter a valid delay time');
+        return;
+      }
+
+      if (delay > 3600) {
+        toast.error('Delay time cannot exceed 3600 seconds (1 hour)');
         return;
       }
 
@@ -82,10 +87,11 @@ export function SettingsForm() {
           <Input
             id='delayTime'
             type='number'
-            min='0'
+            min='1'
+            max='3600'
             value={delayTime}
             onChange={(e) => setDelayTime(e.target.value)}
-            placeholder='Enter delay time'
+            placeholder='Enter delay time in seconds'
             className='max-w-[200px]'
           />
           <Button onClick={handleSave} disabled={isSaving}>
@@ -93,7 +99,7 @@ export function SettingsForm() {
           </Button>
         </div>
         <p className='text-muted-foreground text-sm'>
-          Time to wait between batches in seconds (0 or more)
+          Time to wait between batches in seconds (1-3600)
         </p>
       </div>
     </div>

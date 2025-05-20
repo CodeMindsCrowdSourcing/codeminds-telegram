@@ -11,7 +11,6 @@ export interface TelegramBot {
   linkImage: string;
   createdAt: string;
   updatedAt: string;
-  buttonPrivateMessage: string;
   messagePrivateMessage: string;
   messageOnClick?: string;
-} 
+}
