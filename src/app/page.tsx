@@ -690,7 +690,7 @@ export default function Page() {
               <div className='pl-2 text-blue-400'>build()</div>{' '}
               <span className='text-gray-400'>{'{'}</span>{' '}
               <span className='text-green-400'>return</span>{' '}
-              <span className='text-gray-400'>'Solutions</span>{' '}
+              <span className='text-gray-400'>&#39;Solutions</span>{' '}
               <span className='text-gray-400'>{'}'}</span>
               <span className='text-gray-400'>{'}'}</span>
             </div>
