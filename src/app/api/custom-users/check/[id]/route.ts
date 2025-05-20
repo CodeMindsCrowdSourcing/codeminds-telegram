@@ -20,7 +20,7 @@ async function processBatch(users: any[], client: TelegramClient) {
   for (const user of users) {
     try {
       const cleanPhone = user.phone.replace(/\D/g, '');
-      
+
       // Check if user exists in Telegram using ResolvePhone
       const result = await client.invoke(
         new Api.contacts.ResolvePhone({
@@ -255,7 +255,6 @@ export async function POST(request: NextRequest, context: RouteParams) {
       }
     }
   } catch (error) {
-    console.error('Error checking user:', error);
     return NextResponse.json(
       {
         error: 'Failed to check user',

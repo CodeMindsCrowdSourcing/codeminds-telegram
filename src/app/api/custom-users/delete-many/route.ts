@@ -22,7 +22,6 @@ export async function POST(request: Request) {
       deleted: result.deletedCount
     });
   } catch (error) {
-    console.error('Error deleting users:', error);
     return NextResponse.json(
       { error: 'Failed to delete users' },
       { status: 500 }

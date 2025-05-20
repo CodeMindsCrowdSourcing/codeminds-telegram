@@ -16,9 +16,8 @@ export async function POST(req: Request) {
       try {
         await CustomUserModel.collection.dropIndexes();
       } catch (e) {
-        console.log('No indexes to drop or error dropping indexes:', e);
       }
-      
+
       // Recreate indexes
       await CustomUserModel.syncIndexes();
       indexesCreated = true;
@@ -78,9 +77,8 @@ export async function POST(req: Request) {
       }
     });
   } catch (error) {
-    console.error('Error adding user:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to add user',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
@@ -153,7 +151,6 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('Error fetching users:', error);
     return NextResponse.json(
       { error: 'Failed to fetch users' },
       { status: 500 }
