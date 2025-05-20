@@ -65,9 +65,8 @@ export async function POST(req: Request) {
       skipped: existingUsers.length
     });
   } catch (error) {
-    console.error('Error saving users:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to save users',
         details: error instanceof Error ? error.message : 'Unknown error'
       },

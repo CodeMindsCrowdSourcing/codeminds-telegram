@@ -42,9 +42,9 @@ export async function POST(request: Request) {
     const checkResult = await CheckLimitsService.canCheck(userId);
     if (!checkResult.canCheck) {
       return NextResponse.json(
-        { 
+        {
           error: checkResult.error,
-          timeToWait: checkResult.timeToWait 
+          timeToWait: checkResult.timeToWait
         },
         { status: 429 }
       );
@@ -144,7 +144,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ results: processResult.results });
   } catch (error) {
-    console.error('Failed to check phones:', error);
     return NextResponse.json(
       { error: 'Failed to check phones' },
       { status: 500 }
@@ -158,7 +157,6 @@ export async function POST(request: Request) {
       }
       await disconnectDB();
     } catch (e) {
-      console.error('Error during cleanup:', e);
     }
   }
 }

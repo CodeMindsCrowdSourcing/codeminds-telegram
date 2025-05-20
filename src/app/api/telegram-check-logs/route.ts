@@ -67,7 +67,6 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('Error fetching logs:', error);
     return NextResponse.json(
       {
         error: 'Failed to fetch logs',
@@ -76,4 +75,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

@@ -28,7 +28,7 @@ export default function Page() {
   // Оптимизированный обработчик скролла с throttle
   useEffect(() => {
     let ticking = false;
-    
+
     const handleScroll = () => {
       if (!ticking && containerRef.current) {
         window.requestAnimationFrame(() => {
@@ -40,13 +40,13 @@ export default function Page() {
           const containerRect = containerRef.current!.getBoundingClientRect();
           const containerTop = containerRect.top;
           const viewportMiddle = clientHeight / 2;
-          
+
           const offsets = Object.entries(sectionRefs).map(([key, ref]) => {
             if (ref.current) {
               const rect = ref.current.getBoundingClientRect();
               const sectionTop = rect.top - containerTop;
               const sectionBottom = rect.bottom - containerTop;
-              
+
               return {
                 key,
                 top: sectionTop,
@@ -64,12 +64,12 @@ export default function Page() {
 
           if (visible.length > 0) {
             // Выбираем секцию, которая ближе всего к центру
-            const closest = visible.reduce((prev, curr) => 
+            const closest = visible.reduce((prev, curr) =>
               curr.distance < prev.distance ? curr : prev
             );
             setActiveSection(closest.key);
           }
-          
+
           ticking = false;
         });
         ticking = true;
@@ -81,12 +81,12 @@ export default function Page() {
       container.addEventListener('scroll', handleScroll, { passive: true });
       return () => container.removeEventListener('scroll', handleScroll);
     }
-  }, []);
+  }, [sectionRefs]);
 
   // Оптимизированный обработчик движения мыши с throttle
   useEffect(() => {
     let ticking = false;
-    
+
     const handleMouseMove = (e: MouseEvent) => {
       if (!ticking && containerRef.current) {
         window.requestAnimationFrame(() => {
@@ -116,7 +116,6 @@ export default function Page() {
         const data = await response.json();
         setDatacenters(data.datacenters || []);
       } catch (error) {
-        console.error('Error fetching datacenters:', error);
       }
     };
 
@@ -139,16 +138,16 @@ export default function Page() {
       {/* Футуристический фон */}
       <div className='fixed inset-0 z-0 overflow-hidden pointer-events-none'>
         {/* Сетка */}
-        <div 
+        <div
           className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-10"
-          style={{ 
+          style={{
             transform: `scale(${1 + scrollProgress * 0.2})`,
             transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
           }}
         />
-        
+
         {/* Интерактивные частицы - уменьшено количество */}
-        <div 
+        <div
           className="absolute inset-0"
           style={{
             background: `radial-gradient(circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(59, 130, 246, 0.12) 0%, transparent 18%)`,
@@ -159,7 +158,7 @@ export default function Page() {
 
         {/* Анимированные линии - оптимизированы */}
         <div className="absolute inset-0">
-          <div 
+          <div
             className="absolute h-[1px] w-full bg-gradient-to-r from-transparent via-blue-500/20 to-transparent"
             style={{
               top: '20%',
@@ -167,7 +166,7 @@ export default function Page() {
               transition: 'transform 0.1s ease-out'
             }}
           />
-          <div 
+          <div
             className="absolute h-[1px] w-full bg-gradient-to-r from-transparent via-blue-500/20 to-transparent"
             style={{
               top: '80%',
@@ -247,11 +246,6 @@ export default function Page() {
         /* Убираем фон у секций */
         section {
           background: transparent !important;
-        }
-
-        /* Делаем фон у карточек полупрозрачным */
-        .bg-zinc-800\/50, .bg-zinc-900\/50 {
-          backdrop-filter: blur(8px);
         }
 
         /* Оптимизация производительности */

@@ -34,14 +34,13 @@ export async function POST(req: Request) {
 
     try {
       await client.connect();
-      
+
       // Start the client with the verification code
       await client.start({
         phoneNumber: async () => phoneNumber,
         password: async () => '',
         phoneCode: async () => phoneCode,
-        onError: async (err) => {
-          console.error('Start error:', err);
+        onError: async () => {
           return Promise.resolve(false);
         }
       });
@@ -72,8 +71,6 @@ export async function POST(req: Request) {
       }
     }
   } catch (error: any) {
-    console.error('Error verifying code:', error);
-
     // Handle specific errors
     if (error.errorMessage?.includes('PHONE_CODE_INVALID')) {
       return NextResponse.json(

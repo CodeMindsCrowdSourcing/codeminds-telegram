@@ -137,7 +137,6 @@ async function startVerificationProcess(userId: string, user: any, session: any,
         const now = new Date();
         const currentStatus = activeVerifications.get(userId);
         if (currentStatus?.nextBatchTime && now < currentStatus.nextBatchTime) {
-          const waitTime = currentStatus.nextBatchTime.getTime() - now.getTime();
           await new Promise(resolve => setTimeout(resolve, 1000));
           continue;
         }
@@ -254,6 +253,7 @@ export async function POST(request: NextRequest) {
       startVerificationProcess(userId, user, session, batchSize, delayTime).catch(error => {
         const currentStatus = activeVerifications.get(userId);
         if (currentStatus?.client?.connected) {
+          // eslint-disable-next-line no-console
           currentStatus.client.destroy().catch(console.error);
         }
         activeVerifications.delete(userId);
@@ -293,7 +293,7 @@ export async function POST(request: NextRequest) {
       }
 
       const now = new Date();
-      const timeUntilNextBatch = verification.nextBatchTime 
+      const timeUntilNextBatch = verification.nextBatchTime
         ? Math.max(0, Math.floor((verification.nextBatchTime.getTime() - now.getTime()) / 1000))
         : 0;
 
@@ -321,4 +321,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

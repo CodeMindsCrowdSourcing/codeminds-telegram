@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { parse } from 'csv-parse/sync';
-import { CustomUser } from '@/types/custom-user';
 import { connectDB } from '@/lib/mongodb';
 import { CustomUserModel } from '@/models/custom-user';
 import { UserModel } from '@/models/user';
@@ -111,7 +110,7 @@ export async function POST(request: Request) {
     // Save only new users
     const savedUsers = await CustomUserModel.insertMany(newUsers, { ordered: false });
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
       users: savedUsers.map(user => ({
         _id: user._id.toString(),
@@ -128,7 +127,6 @@ export async function POST(request: Request) {
       }
     });
   } catch (error) {
-    console.error('Error processing file:', error);
     return NextResponse.json(
       { error: 'Error processing file' },
       { status: 500 }

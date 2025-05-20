@@ -25,11 +25,11 @@ import { DisconnectButton } from '@/components/custom-users/disconnect-button';
 export default async function CustomUsersPage() {
   await connectDB();
   const { userId } = await auth();
-  
+
   const session = userId
     ? await TelegramSessionModel.findOne({ userId })
     : null;
-  
+
   const isConnected = !!session;
 
   const handleUpdateSession = async () => {
@@ -48,7 +48,6 @@ export default async function CustomUsersPage() {
 
       window.location.reload();
     } catch (error) {
-      console.error('Failed to update session:', error);
     }
   };
 
@@ -93,7 +92,6 @@ export default async function CustomUsersPage() {
       link.download = `custom-users-${new Date().toISOString()}.csv`;
       link.click();
     } catch (error) {
-      console.error('Failed to export users:', error);
     }
   };
 

@@ -3,7 +3,7 @@ import { auth } from '@clerk/nextjs/server';
 import { connectDB } from '@/lib/mongodb';
 import { TelegramSessionModel } from '@/models/telegram-session';
 
-export async function POST(req: Request) {
+export async function POST() {
   try {
     const { userId } = await auth();
     if (!userId) {
@@ -25,7 +25,6 @@ export async function POST(req: Request) {
       message: 'Disconnected successfully'
     });
   } catch (error) {
-    console.error('Error disconnecting:', error);
     return NextResponse.json(
       { error: 'Failed to disconnect' },
       { status: 500 }

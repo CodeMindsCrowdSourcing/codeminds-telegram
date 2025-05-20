@@ -22,7 +22,6 @@ export async function GET() {
 
     return NextResponse.json({ isConnected: !!session });
   } catch (error) {
-    console.error('Error checking Telegram connection:', error);
     return NextResponse.json(
       { isConnected: false, error: 'Internal server error' },
       { status: 500 }

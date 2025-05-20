@@ -37,10 +37,9 @@ export async function POST(req: Request) {
       message: 'Session saved successfully'
     });
   } catch (error) {
-    console.error('Error saving session:', error);
     return NextResponse.json(
       { error: 'Failed to save session' },
       { status: 500 }
     );
   }
-} 
+}

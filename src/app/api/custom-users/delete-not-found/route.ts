@@ -4,7 +4,7 @@ import { CustomUserModel } from '@/models/custom-user';
 import { UserModel } from '@/models/user';
 import connectDB from '@/lib/mongodb';
 
-export async function POST(req: Request) {
+export async function POST() {
   try {
     await connectDB();
     const { userId } = await auth();
@@ -37,13 +37,12 @@ export async function POST(req: Request) {
       deleted: result.deletedCount
     });
   } catch (error) {
-    console.error('Error deleting users:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to delete users',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
     );
   }
-} 
+}

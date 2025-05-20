@@ -10,13 +10,13 @@ async function measureLatency(host: string): Promise<number | null> {
   try {
     // Use system ping command
     const { stdout } = await execAsync(`ping -n 1 -w 5000 ${host}`);
-    
+
     // Parse the output to get the time
     const timeMatch = stdout.match(/время=(\d+)мс/);
     if (timeMatch && timeMatch[1]) {
       return parseInt(timeMatch[1], 10);
     }
-    
+
     return null;
   } catch (error) {
     return null;
@@ -40,7 +40,7 @@ export async function GET() {
           }
 
           const latency = await measureLatency(dc.ip);
-          
+
           return {
             ...dc,
             ping: latency
@@ -56,7 +56,6 @@ export async function GET() {
 
     return NextResponse.json({ datacenters: pingResults });
   } catch (error) {
-    console.error('Failed to measure latency:', error);
     return NextResponse.json(
       { error: 'Failed to measure latency' },
       { status: 500 }
