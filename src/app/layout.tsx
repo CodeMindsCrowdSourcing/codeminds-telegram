@@ -19,6 +19,9 @@ const META_THEME_COLORS = {
 export const metadata: Metadata = {
   title: 'CodeMinds',
   description: 'Telegram bot dashboard',
+  icons: {
+    icon: '/favicon.ico'
+  }
 };
 
 export const viewport: Viewport = {
