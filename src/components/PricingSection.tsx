@@ -29,10 +29,18 @@ const plans: Plan[] = [
     price: 5,
     serverOnlyPrice: 3,
     features: [
-      { text: '1 Website', tooltip: {
-        title: 'Landing page with:',
-        items: ['User registration', 'Photo gallery', 'Navigation menu', 'Contact form']
-      }},
+      {
+        text: '1 Website',
+        tooltip: {
+          title: 'Landing page with:',
+          items: [
+            'User registration',
+            'Photo gallery',
+            'Navigation menu',
+            'Contact form'
+          ]
+        }
+      },
       { text: '1 Bot' },
       { text: 'Basic Analytics' }
     ],
@@ -46,17 +54,20 @@ const plans: Plan[] = [
     price: 15,
     serverOnlyPrice: 8,
     features: [
-      { text: '3 Websites', tooltip: {
-        title: 'Website with:',
-        items: [
-          'Google authentication',
-          'Database integration',
-          'Performance optimization',
-          'Visit analytics',
-          'Contact forms',
-          'Admin dashboard'
-        ]
-      }},
+      {
+        text: '3 Websites',
+        tooltip: {
+          title: 'Website with:',
+          items: [
+            'Google authentication',
+            'Database integration',
+            'Performance optimization',
+            'Visit analytics',
+            'Contact forms',
+            'Admin dashboard'
+          ]
+        }
+      },
       { text: '1000 Mbps Channel' },
       { text: 'Database Included' },
       { text: '10 Bots' },
@@ -73,17 +84,20 @@ const plans: Plan[] = [
     price: 30,
     serverOnlyPrice: 11,
     features: [
-      { text: '5 Websites', tooltip: {
-        title: 'Advanced website with:',
-        items: [
-          'Multi-site management',
-          'Advanced security',
-          'Custom integrations',
-          'Advanced analytics',
-          'API access',
-          'Custom development'
-        ]
-      }},
+      {
+        text: '5 Websites',
+        tooltip: {
+          title: 'Advanced website with:',
+          items: [
+            'Multi-site management',
+            'Advanced security',
+            'Custom integrations',
+            'Advanced analytics',
+            'API access',
+            'Custom development'
+          ]
+        }
+      },
       { text: '1000 Mbps Channel' },
       { text: 'Database Included' },
       { text: 'Anti-DDoS Protection' },
@@ -104,10 +118,12 @@ const plans: Plan[] = [
 ];
 
 const FeatureIcon = ({ isServerOnly }: { isServerOnly: boolean }) => (
-  <div className="relative w-4 h-4 mr-2">
+  <div className='relative mr-2 h-4 w-4'>
     <svg
-      className={`absolute inset-0 h-4 w-4 text-green-400 transition-all duration-300 transform ${
-        isServerOnly ? 'opacity-0 rotate-90 scale-0' : 'opacity-100 rotate-0 scale-100'
+      className={`absolute inset-0 h-4 w-4 transform text-green-400 transition-all duration-300 ${
+        isServerOnly
+          ? 'scale-0 rotate-90 opacity-0'
+          : 'scale-100 rotate-0 opacity-100'
       }`}
       fill='none'
       viewBox='0 0 24 24'
@@ -121,8 +137,10 @@ const FeatureIcon = ({ isServerOnly }: { isServerOnly: boolean }) => (
       />
     </svg>
     <svg
-      className={`absolute inset-0 h-4 w-4 text-red-400 transition-all duration-300 transform ${
-        isServerOnly ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-0'
+      className={`absolute inset-0 h-4 w-4 transform text-red-400 transition-all duration-300 ${
+        isServerOnly
+          ? 'scale-100 rotate-0 opacity-100'
+          : 'scale-0 -rotate-90 opacity-0'
       }`}
       fill='none'
       viewBox='0 0 24 24'
@@ -170,15 +188,21 @@ const TooltipIcon = () => (
   </svg>
 );
 
-const FeatureItem = ({ text, tooltip, isServerOnly }: Feature & { isServerOnly: boolean }) => (
+const FeatureItem = ({
+  text,
+  tooltip,
+  isServerOnly
+}: Feature & { isServerOnly: boolean }) => (
   <li className='flex items-center transition-colors duration-300 group-hover:text-gray-300'>
     <FeatureIcon isServerOnly={isServerOnly} />
     {text}
     {tooltip && (
       <div className='group/tooltip relative ml-1'>
         <TooltipIcon />
-        <div className='invisible absolute bottom-full left-1/2 mb-2 -translate-x-1/2 min-w-[200px] max-w-[280px] rounded-lg bg-zinc-800/95 p-4 text-xs text-gray-300 opacity-0 shadow-lg backdrop-blur-sm transition-all duration-300 group-hover/tooltip:visible group-hover/tooltip:opacity-100'>
-          <div className='mb-3 border-b border-zinc-700/50 pb-2 font-medium text-blue-400'>{tooltip.title}</div>
+        <div className='invisible absolute bottom-full left-1/2 mb-2 max-w-[280px] min-w-[200px] -translate-x-1/2 rounded-lg bg-zinc-800/95 p-4 text-xs text-gray-300 opacity-0 shadow-lg backdrop-blur-sm transition-all duration-300 group-hover/tooltip:visible group-hover/tooltip:opacity-100'>
+          <div className='mb-3 border-b border-zinc-700/50 pb-2 font-medium text-blue-400'>
+            {tooltip.title}
+          </div>
           <div className='space-y-2'>
             {tooltip.items.map((item, index) => (
               <div key={index} className='flex items-start gap-2'>
@@ -207,7 +231,8 @@ export function PricingSection({ scrollProgress }: PricingSectionProps) {
   const getParallaxStyle = (factor: number) => ({
     transform: `translateY(${scrollProgress * 100 * factor}px)`,
     opacity: Math.min(1, 1.2 + scrollProgress * 0.2),
-    transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
+    transition:
+      'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
   });
 
   const handlePlanSelect = (plan: string) => {
@@ -253,35 +278,58 @@ export function PricingSection({ scrollProgress }: PricingSectionProps) {
           </div>
           <div className='grid grid-cols-1 gap-4 sm:grid-cols-3'>
             {plans.map((plan) => (
-              <div key={plan.name} className='group flex flex-col rounded-lg bg-zinc-900/50 p-4 border border-zinc-700/60 transition-all duration-300 hover:shadow-[0_0_30px_rgba(59,130,246,0.1)] hover:-translate-y-1'>
+              <div
+                key={plan.name}
+                className={`group flex flex-col rounded-lg border p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(59,130,246,0.1)] ${
+                  plan.name === 'Pro'
+                    ? 'scale-105 border-blue-500/30 bg-zinc-800/80'
+                    : 'scale-95 border-zinc-700/60 bg-zinc-900/50'
+                }`}
+              >
                 <div className='mb-2 flex items-center justify-between'>
-                  <div className='text-base font-bold transition-colors duration-300 group-hover:text-blue-400'>{plan.name}</div>
+                  <div className='text-base font-bold transition-colors duration-300 group-hover:text-blue-400'>
+                    {plan.name}
+                  </div>
                   <label className='flex items-center gap-2 text-sm text-gray-400 transition-colors duration-300 group-hover:text-gray-300'>
                     <input
                       type='checkbox'
                       checked={selectedPlan === plan.name.toLowerCase()}
                       onChange={() => handlePlanSelect(plan.name.toLowerCase())}
-                      className='h-4 w-4 rounded border-gray-600 bg-zinc-800 text-blue-500 focus:ring-blue-500 transition-colors duration-300 group-hover:border-blue-500'
+                      className='h-4 w-4 rounded border-gray-600 bg-zinc-800 text-blue-500 transition-colors duration-300 group-hover:border-blue-500 focus:ring-blue-500'
                     />
-                    Only Server
+                    Server Only
                   </label>
                 </div>
                 <div className='mb-4 text-2xl font-bold transition-colors duration-300 group-hover:text-blue-400'>
-                  <div className="flex items-center min-h-[2.5rem]">
+                  <div className='flex min-h-[2.5rem] items-center'>
                     {/* Normal price */}
-                    <span className={`transition-all duration-300 flex items-baseline ${
-                      selectedPlan === plan.name.toLowerCase() ? 'opacity-0 scale-90 -translate-y-2 absolute pointer-events-none' : 'opacity-100 scale-100 translate-y-0 relative'
-                    }`}>
+                    <span
+                      className={`flex items-baseline transition-all duration-300 ${
+                        selectedPlan === plan.name.toLowerCase()
+                          ? 'pointer-events-none absolute -translate-y-2 scale-90 opacity-0'
+                          : 'relative translate-y-0 scale-100 opacity-100'
+                      }`}
+                    >
                       ${plan.price}
-                      <span className='ml-1 text-sm text-gray-400 transition-colors duration-300 group-hover:text-gray-300'>/month</span>
+                      <span className='ml-1 text-sm text-gray-400 transition-colors duration-300 group-hover:text-gray-300'>
+                        /month
+                      </span>
                     </span>
                     {/* Discounted price */}
-                    <span className={`transition-all duration-300 flex items-baseline ${
-                      selectedPlan === plan.name.toLowerCase() ? 'opacity-100 scale-100 translate-y-0 relative' : 'opacity-0 scale-90 -translate-y-2 absolute pointer-events-none'
-                    }`}>
-                      <span className='line-through text-gray-500 mr-2'>${plan.price}</span>
+                    <span
+                      className={`flex items-baseline transition-all duration-300 ${
+                        selectedPlan === plan.name.toLowerCase()
+                          ? 'relative translate-y-0 scale-100 opacity-100'
+                          : 'pointer-events-none absolute -translate-y-2 scale-90 opacity-0'
+                      }`}
+                    >
+                      <span className='mr-2 text-gray-500 line-through'>
+                        ${plan.price}
+                      </span>
                       <span>${plan.serverOnlyPrice}</span>
-                      <span className='ml-1 text-sm text-gray-400 transition-colors duration-300 group-hover:text-gray-300'>/month</span>
+                      <span className='ml-1 text-sm text-gray-400 transition-colors duration-300 group-hover:text-gray-300'>
+                        /month
+                      </span>
                     </span>
                   </div>
                 </div>
@@ -296,10 +344,14 @@ export function PricingSection({ scrollProgress }: PricingSectionProps) {
                       isServerOnly={selectedPlan === plan.name.toLowerCase()}
                     />
                   ))}
-                  <ServerFeatureItem text={`Server: ${plan.serverFeatures.cpu}`} />
-                  <ServerFeatureItem text={`Server: ${plan.serverFeatures.ram}`} />
+                  <ServerFeatureItem
+                    text={`Server: ${plan.serverFeatures.cpu}`}
+                  />
+                  <ServerFeatureItem
+                    text={`Server: ${plan.serverFeatures.ram}`}
+                  />
                 </ul>
-                <button className='mt-auto rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white transition-all duration-300 hover:bg-blue-600 hover:shadow-[0_0_15px_rgba(59,130,246,0.5)] hover:-translate-y-0.5'>
+                <button className='mt-auto rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-600 hover:shadow-[0_0_15px_rgba(59,130,246,0.5)]'>
                   Get Started
                 </button>
               </div>
