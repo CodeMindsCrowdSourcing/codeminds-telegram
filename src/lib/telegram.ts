@@ -257,7 +257,7 @@ async function handleMyChatMember(bot: TelegramBot, update: TelegramUpdate) {
           [
             {
               text: bot.buttonText,
-              callback_data: 'contact_author'
+              url: `tg://user?id=${bot.authorId}`
             }
           ]
         ]
@@ -277,9 +277,6 @@ async function handleMyChatMember(bot: TelegramBot, update: TelegramUpdate) {
             reply_markup: keyboard
           });
         }
-      } else {
-        // Send message with button if no media
-        await sendMessage(bot.token, chatId, bot.infoText, keyboard);
       }
     } catch (error) {
       throw new Error('Error sending welcome message:');
