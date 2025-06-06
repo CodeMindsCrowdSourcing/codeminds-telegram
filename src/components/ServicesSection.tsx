@@ -1,20 +1,7 @@
-interface ServicesSectionProps {
-  scrollProgress: number;
-}
-
-export function ServicesSection({ scrollProgress }: ServicesSectionProps) {
-  const getParallaxStyle = (factor: number) => ({
-    transform: `translateY(${scrollProgress * 100 * factor}px)`,
-    opacity: Math.min(1, 1.2 + scrollProgress * 0.2),
-    transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
-  });
-
+export function ServicesSection() {
   return (
-    <section className='relative flex h-auto min-h-[90vh] snap-start items-center justify-center bg-zinc-900 md:h-[80vh]'>
-      <div
-        className='relative z-10 container mx-auto px-1 py-4 sm:px-2 sm:py-8'
-        style={getParallaxStyle(-0.5)}
-      >
+    <section className='relative flex h-auto min-h-[90vh] snap-start items-center justify-center md:h-[80vh]'>
+      <div className='relative z-10 container mx-auto px-1 py-4 sm:px-2 sm:py-8'>
         <h2 className='mb-4 bg-gradient-to-r from-blue-400 to-blue-700 bg-clip-text text-center text-2xl font-bold text-transparent drop-shadow-lg sm:mb-8 sm:text-4xl'>
           Development Services
         </h2>
@@ -51,7 +38,7 @@ export function ServicesSection({ scrollProgress }: ServicesSectionProps) {
           </div>
           <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3'>
             {/* Web Development */}
-            <div className='group flex flex-col items-center rounded-lg bg-zinc-900/50 p-4 border border-zinc-700/60 text-center transition-all duration-300 hover:shadow-[0_0_30px_rgba(59,130,246,0.1)] hover:-translate-y-1'>
+            <div className='group flex flex-col items-center rounded-lg border border-zinc-700/60 bg-zinc-900/50 p-4 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(59,130,246,0.1)]'>
               <div className='mb-2 text-blue-400 transition-transform duration-300 group-hover:scale-110'>
                 <svg
                   className='h-8 w-8'
@@ -67,13 +54,15 @@ export function ServicesSection({ scrollProgress }: ServicesSectionProps) {
                   />
                 </svg>
               </div>
-              <div className='mb-1 text-base font-bold transition-colors duration-300 group-hover:text-blue-400'>Web Development</div>
+              <div className='mb-1 text-base font-bold transition-colors duration-300 group-hover:text-blue-400'>
+                Web Development
+              </div>
               <div className='text-xs text-gray-400 transition-colors duration-300 group-hover:text-gray-300'>
                 Corporate websites, CRM, ERP
               </div>
             </div>
             {/* Hosting & Server Support */}
-            <div className='group flex flex-col items-center rounded-lg bg-zinc-900/50 p-4 border border-zinc-700/60 text-center transition-all duration-300 hover:shadow-[0_0_30px_rgba(59,130,246,0.1)] hover:-translate-y-1'>
+            <div className='group flex flex-col items-center rounded-lg border border-zinc-700/60 bg-zinc-900/50 p-4 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(59,130,246,0.1)]'>
               <div className='mb-2 text-green-400 transition-transform duration-300 group-hover:scale-110'>
                 <svg
                   className='h-8 w-8'
@@ -97,7 +86,7 @@ export function ServicesSection({ scrollProgress }: ServicesSectionProps) {
               </div>
             </div>
             {/* Cloud Migration */}
-            <div className='group flex flex-col items-center rounded-lg bg-zinc-900/50 p-4 border border-zinc-700/60 text-center transition-all duration-300 hover:shadow-[0_0_30px_rgba(59,130,246,0.1)] hover:-translate-y-1'>
+            <div className='group flex flex-col items-center rounded-lg border border-zinc-700/60 bg-zinc-900/50 p-4 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(59,130,246,0.1)]'>
               <div className='mb-2 text-purple-400 transition-transform duration-300 group-hover:scale-110'>
                 <svg
                   className='h-8 w-8'
@@ -113,13 +102,15 @@ export function ServicesSection({ scrollProgress }: ServicesSectionProps) {
                   />
                 </svg>
               </div>
-              <div className='mb-1 text-base font-bold transition-colors duration-300 group-hover:text-purple-400'>Cloud Migration</div>
+              <div className='mb-1 text-base font-bold transition-colors duration-300 group-hover:text-purple-400'>
+                Cloud Migration
+              </div>
               <div className='text-xs text-gray-400 transition-colors duration-300 group-hover:text-gray-300'>
                 Private & Public Cloud solutions
               </div>
             </div>
             {/* Infrastructure Optimization */}
-            <div className='group flex flex-col items-center rounded-lg bg-zinc-900/50 p-4 border border-zinc-700/60 text-center transition-all duration-300 hover:shadow-[0_0_30px_rgba(59,130,246,0.1)] hover:-translate-y-1'>
+            <div className='group flex flex-col items-center rounded-lg border border-zinc-700/60 bg-zinc-900/50 p-4 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(59,130,246,0.1)]'>
               <div className='mb-2 text-yellow-400 transition-transform duration-300 group-hover:scale-110'>
                 <svg
                   className='h-8 w-8'
@@ -149,7 +140,7 @@ export function ServicesSection({ scrollProgress }: ServicesSectionProps) {
               </div>
             </div>
             {/* IT Consulting */}
-            <div className='group flex flex-col items-center rounded-lg bg-zinc-900/50 p-4 border border-zinc-700/60 text-center transition-all duration-300 hover:shadow-[0_0_30px_rgba(59,130,246,0.1)] hover:-translate-y-1'>
+            <div className='group flex flex-col items-center rounded-lg border border-zinc-700/60 bg-zinc-900/50 p-4 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(59,130,246,0.1)]'>
               <div className='mb-2 text-pink-400 transition-transform duration-300 group-hover:scale-110'>
                 <svg
                   className='h-8 w-8'
@@ -165,13 +156,15 @@ export function ServicesSection({ scrollProgress }: ServicesSectionProps) {
                   />
                 </svg>
               </div>
-              <div className='mb-1 text-base font-bold transition-colors duration-300 group-hover:text-pink-400'>IT Consulting</div>
+              <div className='mb-1 text-base font-bold transition-colors duration-300 group-hover:text-pink-400'>
+                IT Consulting
+              </div>
               <div className='text-xs text-gray-400 transition-colors duration-300 group-hover:text-gray-300'>
                 Tech strategy & digital transformation
               </div>
             </div>
             {/* Automation & Integrations */}
-            <div className='group flex flex-col items-center rounded-lg bg-zinc-900/50 p-4 border border-zinc-700/60 text-center transition-all duration-300 hover:shadow-[0_0_30px_rgba(59,130,246,0.1)] hover:-translate-y-1'>
+            <div className='group flex flex-col items-center rounded-lg border border-zinc-700/60 bg-zinc-900/50 p-4 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(59,130,246,0.1)]'>
               <div className='mb-2 text-cyan-400 transition-transform duration-300 group-hover:scale-110'>
                 <svg
                   className='h-8 w-8'
@@ -199,4 +192,4 @@ export function ServicesSection({ scrollProgress }: ServicesSectionProps) {
       </div>
     </section>
   );
-} 
+}

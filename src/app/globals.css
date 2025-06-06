@@ -164,8 +164,8 @@
 
 /* Hide scrollbar for IE, Edge and Firefox */
 .hide-scrollbar {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
 }
 
 /* Smooth scrolling for the entire page */
@@ -182,8 +182,9 @@ html {
 
 /* Smooth section transitions */
 section {
-  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-              opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Custom scrollbar styling */
@@ -211,7 +212,7 @@ section {
     scroll-snap-type: y proximity;
     scroll-snap-stop: always;
   }
-  
+
   .snap-start {
     scroll-snap-align: start;
     scroll-snap-stop: always;

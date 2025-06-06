@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
+import ShinyText from '@/components/style/ShinyText';
+import StarBorder from '@/components/style/StarBorder';
+import Dock from '@/components/style/Dock';
 
 type SectionKey = 'welcome' | 'features' | 'analytics' | 'services' | 'pricing';
 
@@ -7,9 +10,17 @@ interface NavigationProps {
   scrollToSection: (key: SectionKey) => void;
 }
 
-export function Navigation({ activeSection, scrollToSection }: NavigationProps) {
+export function Navigation({
+  activeSection,
+  scrollToSection
+}: NavigationProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-
+  const items = [
+    // { icon: <VscHome size={18} />, label: 'Home', onClick: () => alert('Home!') },
+    // { icon: <VscArchive size={18} />, label: 'Archive', onClick: () => alert('Archive!') },
+    // { icon: <VscAccount size={18} />, label: 'Profile', onClick: () => alert('Profile!') },
+    // { icon: <VscSettingsGear size={18} />, label: 'Settings', onClick: () => alert('Settings!') },
+  ];
   const navItems = [
     { key: 'welcome' as SectionKey, label: 'Welcome' },
     { key: 'features' as SectionKey, label: 'Features' },
@@ -23,17 +34,31 @@ export function Navigation({ activeSection, scrollToSection }: NavigationProps) 
       {/* Desktop floating nav */}
       <nav className='fixed top-6 left-1/2 z-50 hidden -translate-x-1/2 flex-row gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4 shadow-xl md:flex'>
         {navItems.map((item) => (
-          <button
+          <StarBorder
             key={item.key}
+            as='button'
             onClick={() => scrollToSection(item.key)}
+            color='green'
             className={`rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-200 ${
               activeSection === item.key
                 ? 'bg-blue-600 text-white shadow-lg'
                 : 'text-gray-300 hover:bg-zinc-800'
             }`}
+            speed='5s'
           >
-            {item.label}
-          </button>
+            <ShinyText text={item.label} speed={3} />
+          </StarBorder>
+          // <button
+          //   key={item.key}
+          //   onClick={() => scrollToSection(item.key)}
+          //   className={`rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-200 ${
+          //     activeSection === item.key
+          //       ? 'bg-blue-600 text-white shadow-lg'
+          //       : 'text-gray-300 hover:bg-zinc-800'
+          //   }`}
+          // >
+          //   {item.label}
+          // </button>
         ))}
       </nav>
 
@@ -111,6 +136,12 @@ export function Navigation({ activeSection, scrollToSection }: NavigationProps) 
           </div>
         </div>
       )}
+      <Dock
+        items={items}
+        panelHeight={68}
+        baseItemSize={50}
+        magnification={70}
+      />
     </>
   );
-} 
+}

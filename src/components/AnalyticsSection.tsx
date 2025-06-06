@@ -1,29 +1,21 @@
 interface AnalyticsSectionProps {
-  scrollProgress: number;
   datacenters: any[];
 }
 
-export function AnalyticsSection({ scrollProgress, datacenters }: AnalyticsSectionProps) {
-  const getParallaxStyle = (factor: number) => ({
-    transform: `translateY(${scrollProgress * 100 * factor}px)`,
-    opacity: Math.min(1, 1.2 + scrollProgress * 0.2),
-    transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
-  });
-
+export function AnalyticsSection({ datacenters }: AnalyticsSectionProps) {
   return (
-    <section className='relative flex h-auto min-h-[100vh] snap-start items-center justify-center bg-zinc-900 md:h-screen'>
-      <div
-        className='relative z-10 container mx-auto px-2 py-8 sm:px-4 sm:py-16'
-        style={getParallaxStyle(-0.5)}
-      >
+    <section className='0 relative flex h-auto min-h-[100vh] snap-start items-center justify-center md:h-screen'>
+      <div className='relative z-10 container mx-auto px-2 py-8 sm:px-4 sm:py-16'>
         <h2 className='mb-6 bg-gradient-to-r from-blue-400 to-blue-700 bg-clip-text text-center text-2xl font-bold text-transparent drop-shadow-lg sm:mb-12 sm:text-4xl'>
           Analytics Dashboard
         </h2>
         <div className='rounded-xl border border-zinc-700/50 bg-zinc-800/50 p-2 backdrop-blur-sm sm:p-8'>
           <div className='mb-4 grid grid-cols-1 gap-4 sm:mb-8 sm:gap-8 md:grid-cols-2'>
             {/* Line Chart */}
-            <div className='group rounded-lg bg-zinc-900/50 p-6 border border-zinc-700/60 transition-all duration-300 hover:shadow-[0_0_30px_rgba(59,130,246,0.1)] hover:-translate-y-1'>
-              <h3 className='mb-4 text-xl font-semibold transition-colors duration-300 group-hover:text-blue-400'>Code Activity</h3>
+            <div className='group rounded-lg border border-zinc-700/60 bg-zinc-900/50 p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(59,130,246,0.1)]'>
+              <h3 className='mb-4 text-xl font-semibold transition-colors duration-300 group-hover:text-blue-400'>
+                Code Activity
+              </h3>
               <div className='relative h-64'>
                 <svg className='h-full w-full' viewBox='0 0 400 200'>
                   <path
@@ -59,17 +51,21 @@ export function AnalyticsSection({ scrollProgress, datacenters }: AnalyticsSecti
               <div className='mt-4 grid grid-cols-2 gap-4'>
                 <div className='rounded-lg bg-zinc-800/50 p-3 transition-all duration-300 group-hover:bg-zinc-800/70'>
                   <div className='text-sm text-gray-400'>Total Commits</div>
-                  <div className='text-2xl font-bold transition-colors duration-300 group-hover:text-blue-400'>1,234</div>
+                  <div className='text-2xl font-bold transition-colors duration-300 group-hover:text-blue-400'>
+                    1,234
+                  </div>
                 </div>
                 <div className='rounded-lg bg-zinc-800/50 p-3 transition-all duration-300 group-hover:bg-zinc-800/70'>
                   <div className='text-sm text-gray-400'>Active Hours</div>
-                  <div className='text-2xl font-bold transition-colors duration-300 group-hover:text-blue-400'>42.5h</div>
+                  <div className='text-2xl font-bold transition-colors duration-300 group-hover:text-blue-400'>
+                    42.5h
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Bar Chart */}
-            <div className='group rounded-lg bg-zinc-900/50 p-6 border border-zinc-700/60 transition-all duration-300 hover:shadow-[0_0_30px_rgba(59,130,246,0.1)] hover:-translate-y-1'>
+            <div className='group rounded-lg border border-zinc-700/60 bg-zinc-900/50 p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(59,130,246,0.1)]'>
               <h3 className='mb-4 text-xl font-semibold transition-colors duration-300 group-hover:text-blue-400'>
                 Performance Metrics
               </h3>
@@ -77,7 +73,7 @@ export function AnalyticsSection({ scrollProgress, datacenters }: AnalyticsSecti
                 {[40, 60, 80, 45, 70, 90].map((height, index) => (
                   <div
                     key={index}
-                    className='w-12 rounded-t bg-blue-500/50 transition-all duration-300 hover:bg-blue-500/70 group-hover:scale-110'
+                    className='w-12 rounded-t bg-blue-500/50 transition-all duration-300 group-hover:scale-110 hover:bg-blue-500/70'
                     style={{ height: `${height}%` }}
                   />
                 ))}
@@ -85,11 +81,15 @@ export function AnalyticsSection({ scrollProgress, datacenters }: AnalyticsSecti
               <div className='mt-4 grid grid-cols-2 gap-4'>
                 <div className='rounded-lg bg-zinc-800/50 p-3 transition-all duration-300 group-hover:bg-zinc-800/70'>
                   <div className='text-sm text-gray-400'>CPU Usage</div>
-                  <div className='text-2xl font-bold transition-colors duration-300 group-hover:text-blue-400'>32%</div>
+                  <div className='text-2xl font-bold transition-colors duration-300 group-hover:text-blue-400'>
+                    32%
+                  </div>
                 </div>
                 <div className='rounded-lg bg-zinc-800/50 p-3 transition-all duration-300 group-hover:bg-zinc-800/70'>
                   <div className='text-sm text-gray-400'>Memory</div>
-                  <div className='text-2xl font-bold transition-colors duration-300 group-hover:text-blue-400'>1.2GB</div>
+                  <div className='text-2xl font-bold transition-colors duration-300 group-hover:text-blue-400'>
+                    1.2GB
+                  </div>
                 </div>
               </div>
             </div>
@@ -98,11 +98,16 @@ export function AnalyticsSection({ scrollProgress, datacenters }: AnalyticsSecti
           {/* New Analytics Blocks */}
           <div className='grid grid-cols-1 gap-4 sm:gap-8 md:grid-cols-3'>
             {/* Pie Chart */}
-            <div className='group flex flex-col items-center rounded-lg bg-zinc-900/50 p-6 border border-zinc-700/60 transition-all duration-300 hover:shadow-[0_0_30px_rgba(59,130,246,0.1)] hover:-translate-y-1'>
+            <div className='group flex flex-col items-center rounded-lg border border-zinc-700/60 bg-zinc-900/50 p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(59,130,246,0.1)]'>
               <h3 className='mb-4 text-xl font-semibold transition-colors duration-300 group-hover:text-blue-400'>
                 Task Distribution
               </h3>
-              <svg width='120' height='120' viewBox='0 0 32 32' className='transition-transform duration-300 group-hover:scale-110'>
+              <svg
+                width='120'
+                height='120'
+                viewBox='0 0 32 32'
+                className='transition-transform duration-300 group-hover:scale-110'
+              >
                 <circle r='16' cx='16' cy='16' fill='#222' />
                 {/* Web: 40% */}
                 <circle
@@ -155,7 +160,7 @@ export function AnalyticsSection({ scrollProgress, datacenters }: AnalyticsSecti
             </div>
 
             {/* Data Center Locations */}
-            <div className='group flex flex-col rounded-lg bg-zinc-900/50 p-6 border border-zinc-700/60 transition-all duration-300 hover:shadow-[0_0_30px_rgba(59,130,246,0.1)] hover:-translate-y-1'>
+            <div className='group flex flex-col rounded-lg border border-zinc-700/60 bg-zinc-900/50 p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(59,130,246,0.1)]'>
               <h3 className='mb-4 text-center text-xl font-semibold transition-colors duration-300 group-hover:text-blue-400'>
                 Data Center Locations
               </h3>
@@ -163,7 +168,7 @@ export function AnalyticsSection({ scrollProgress, datacenters }: AnalyticsSecti
                 {datacenters.map((dc) => (
                   <div
                     key={dc._id || dc.city}
-                    className='group/dc flex flex-col items-center rounded-lg bg-zinc-800/60 p-2 transition-all duration-300 hover:bg-zinc-800/80 hover:scale-105'
+                    className='group/dc flex flex-col items-center rounded-lg bg-zinc-800/60 p-2 transition-all duration-300 hover:scale-105 hover:bg-zinc-800/80'
                   >
                     <svg
                       className={`mb-1 h-6 w-6 transition-transform duration-300 group-hover/dc:scale-110 ${dc.color || 'text-blue-400'}`}
@@ -211,24 +216,34 @@ export function AnalyticsSection({ scrollProgress, datacenters }: AnalyticsSecti
             </div>
 
             {/* Numeric Analytics Cards */}
-            <div className='group flex flex-col gap-4 rounded-lg bg-zinc-900/50 p-6 border border-zinc-700/60 transition-all duration-300 hover:shadow-[0_0_30px_rgba(59,130,246,0.1)] hover:-translate-y-1'>
-              <h3 className='mb-4 text-xl font-semibold transition-colors duration-300 group-hover:text-blue-400'>Quick Stats</h3>
+            <div className='group flex flex-col gap-4 rounded-lg border border-zinc-700/60 bg-zinc-900/50 p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(59,130,246,0.1)]'>
+              <h3 className='mb-4 text-xl font-semibold transition-colors duration-300 group-hover:text-blue-400'>
+                Quick Stats
+              </h3>
               <div className='flex flex-col gap-2'>
                 <div className='flex justify-between text-sm text-gray-400 transition-colors duration-300 group-hover:text-gray-300'>
                   <span>Active Users</span>
-                  <span className='font-bold text-blue-400 transition-colors duration-300 group-hover:text-blue-300'>1,024</span>
+                  <span className='font-bold text-blue-400 transition-colors duration-300 group-hover:text-blue-300'>
+                    1,024
+                  </span>
                 </div>
                 <div className='flex justify-between text-sm text-gray-400 transition-colors duration-300 group-hover:text-gray-300'>
                   <span>Deploys</span>
-                  <span className='font-bold text-green-400 transition-colors duration-300 group-hover:text-green-300'>12</span>
+                  <span className='font-bold text-green-400 transition-colors duration-300 group-hover:text-green-300'>
+                    12
+                  </span>
                 </div>
                 <div className='flex justify-between text-sm text-gray-400 transition-colors duration-300 group-hover:text-gray-300'>
                   <span>Errors</span>
-                  <span className='font-bold text-red-400 transition-colors duration-300 group-hover:text-red-300'>2</span>
+                  <span className='font-bold text-red-400 transition-colors duration-300 group-hover:text-red-300'>
+                    2
+                  </span>
                 </div>
                 <div className='flex justify-between text-sm text-gray-400 transition-colors duration-300 group-hover:text-gray-300'>
                   <span>Avg. Response</span>
-                  <span className='font-bold text-yellow-400 transition-colors duration-300 group-hover:text-yellow-300'>120ms</span>
+                  <span className='font-bold text-yellow-400 transition-colors duration-300 group-hover:text-yellow-300'>
+                    120ms
+                  </span>
                 </div>
               </div>
               <div className='mt-4 text-xs text-gray-500 transition-colors duration-300 group-hover:text-gray-400'>
@@ -240,4 +255,4 @@ export function AnalyticsSection({ scrollProgress, datacenters }: AnalyticsSecti
       </div>
     </section>
   );
-} 
+}

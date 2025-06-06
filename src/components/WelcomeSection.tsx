@@ -9,50 +9,62 @@ import {
 } from '@/components/ui/dialog';
 import { SignIn, SignUp } from '@clerk/nextjs';
 import { useState } from 'react';
+import SplitText from '@/components/style/SplitText';
+import BlurText from '@/components/style/BlurText';
+import ShinyText from '@/components/style/ShinyText';
+import GlitchText from '@/components/style/GlitchText';
+import StarBorder from '@/components/style/StarBorder';
 
-interface WelcomeSectionProps {
-  scrollProgress: number;
-}
-
-export function WelcomeSection({ scrollProgress }: WelcomeSectionProps) {
+export function WelcomeSection() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'sign-in' | 'sign-up'>('sign-in');
 
-  const getParallaxStyle = (factor: number) => ({
-    transform: `translateY(${scrollProgress * 100 * factor}px)`,
-    opacity: Math.min(1, 1.2 + scrollProgress * 0.2),
-    transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
-  });
-
   return (
-    <section className='relative flex min-h-[90vh] snap-start items-center justify-center overflow-hidden bg-gradient-to-b from-zinc-900 to-black md:h-screen'>
-      <div
-        className='relative z-10 px-2 text-center sm:px-4'
-        style={getParallaxStyle(0.5)}
-      >
-        <h1 className='mb-4 bg-gradient-to-r from-blue-400 to-blue-700 bg-clip-text text-3xl font-extrabold tracking-tight text-transparent drop-shadow-lg sm:text-5xl'>
-          Welcome to CodeMinds
-        </h1>
-        <p className='mb-8 text-base text-gray-300 sm:text-xl'>
-          Your smart assistant for building a successful business.
-        </p>
+    <section className='relative flex min-h-[90vh] snap-start items-center justify-center overflow-hidden md:h-screen'>
+      <div className='relative z-10 px-2 text-center sm:px-4'>
+        <SplitText
+          text='Welcome to'
+          className='text-center text-2xl font-semibold'
+          delay={100}
+          duration={0.6}
+          ease='power3.out'
+          splitType='chars'
+          from={{ opacity: 0, y: 40 }}
+          to={{ opacity: 1, y: 0 }}
+          threshold={0.1}
+          rootMargin='-100px'
+          textAlign='center'
+        />
+        <GlitchText
+          speed={2}
+          enableShadows={true}
+          enableOnHover={true}
+          className='custom-class'
+        >
+          CodeMinds
+        </GlitchText>
+        <BlurText
+          text='Built for performance. Ready for anything.'
+          delay={150}
+          animateBy='words'
+          direction='top'
+          className='mb-8 text-2xl'
+        />
 
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
-            <Button
-              size='lg'
-              className='rounded-full bg-blue-600 px-8 py-6 text-xl text-white shadow-lg transition-all duration-300 hover:bg-blue-700 hover:shadow-xl'
-            >
-              Connect
-            </Button>
+            <StarBorder as='button' color='cyan' speed='5s'>
+              <ShinyText text='Connect' disabled={false} speed={3} />
+            </StarBorder>
           </DialogTrigger>
+
           <DialogContent className='flex w-[95vw] flex-col items-center justify-center bg-zinc-900 sm:max-w-md'>
             <DialogHeader>
               <DialogTitle className='mb-4 text-center text-xl'>
                 {activeTab === 'sign-in' ? 'Sign In' : 'Sign Up'}
               </DialogTitle>
               <DialogDescription className='text-center text-sm text-gray-400'>
-                {activeTab === 'sign-in' 
+                {activeTab === 'sign-in'
                   ? 'Sign in to your account to continue'
                   : 'Create a new account to get started'}
               </DialogDescription>
@@ -99,12 +111,8 @@ export function WelcomeSection({ scrollProgress }: WelcomeSectionProps) {
           </DialogContent>
         </Dialog>
       </div>
-
-      {/* Анимированный фон */}
-      <div
-        className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]"
-        style={{ transform: `scale(${1 + scrollProgress * 0.2})` }}
-      />
+      {/*Анимированный фон*/}
+      <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
     </section>
   );
-} 
+}
