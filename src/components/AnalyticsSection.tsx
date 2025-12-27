@@ -7,14 +7,14 @@ export function AnalyticsSection({ datacenters }: AnalyticsSectionProps) {
     <section className='0 relative flex h-auto min-h-[100vh] snap-start items-center justify-center md:h-screen'>
       <div className='relative z-10 container mx-auto px-2 py-8 sm:px-4 sm:py-16'>
         <h2 className='mb-6 bg-gradient-to-r from-blue-400 to-blue-700 bg-clip-text text-center text-2xl font-bold text-transparent drop-shadow-lg sm:mb-12 sm:text-4xl'>
-          Analytics Dashboard
+          Data Center Monitoring
         </h2>
         <div className='rounded-xl border border-zinc-700/50 bg-zinc-800/50 p-2 backdrop-blur-sm sm:p-8'>
           <div className='mb-4 grid grid-cols-1 gap-4 sm:mb-8 sm:gap-8 md:grid-cols-2'>
-            {/* Line Chart */}
+            {/* Server Load Chart */}
             <div className='group rounded-lg border border-zinc-700/60 bg-zinc-900/50 p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(59,130,246,0.1)]'>
               <h3 className='mb-4 text-xl font-semibold transition-colors duration-300 group-hover:text-blue-400'>
-                Code Activity
+                Server Load
               </h3>
               <div className='relative h-64'>
                 <svg className='h-full w-full' viewBox='0 0 400 200'>
@@ -39,38 +39,36 @@ export function AnalyticsSection({ datacenters }: AnalyticsSectionProps) {
                   </defs>
                 </svg>
                 <div className='absolute right-0 bottom-0 left-0 flex justify-between text-xs text-gray-400'>
-                  <span>Mon</span>
-                  <span>Tue</span>
-                  <span>Wed</span>
-                  <span>Thu</span>
-                  <span>Fri</span>
-                  <span>Sat</span>
-                  <span>Sun</span>
+                  <span>00:00</span>
+                  <span>06:00</span>
+                  <span>12:00</span>
+                  <span>18:00</span>
+                  <span>24:00</span>
                 </div>
               </div>
               <div className='mt-4 grid grid-cols-2 gap-4'>
                 <div className='rounded-lg bg-zinc-800/50 p-3 transition-all duration-300 group-hover:bg-zinc-800/70'>
-                  <div className='text-sm text-gray-400'>Total Commits</div>
+                  <div className='text-sm text-gray-400'>Peak Load</div>
                   <div className='text-2xl font-bold transition-colors duration-300 group-hover:text-blue-400'>
-                    1,234
+                    78%
                   </div>
                 </div>
                 <div className='rounded-lg bg-zinc-800/50 p-3 transition-all duration-300 group-hover:bg-zinc-800/70'>
-                  <div className='text-sm text-gray-400'>Active Hours</div>
+                  <div className='text-sm text-gray-400'>Avg. Response</div>
                   <div className='text-2xl font-bold transition-colors duration-300 group-hover:text-blue-400'>
-                    42.5h
+                    45ms
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Bar Chart */}
+            {/* Resource Usage */}
             <div className='group rounded-lg border border-zinc-700/60 bg-zinc-900/50 p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(59,130,246,0.1)]'>
               <h3 className='mb-4 text-xl font-semibold transition-colors duration-300 group-hover:text-blue-400'>
-                Performance Metrics
+                Resource Usage
               </h3>
               <div className='flex h-64 items-end justify-between gap-2'>
-                {[40, 60, 80, 45, 70, 90].map((height, index) => (
+                {[65, 75, 82, 68, 72, 78].map((height, index) => (
                   <div
                     key={index}
                     className='w-12 rounded-t bg-blue-500/50 transition-all duration-300 group-hover:scale-110 hover:bg-blue-500/70'
@@ -82,13 +80,13 @@ export function AnalyticsSection({ datacenters }: AnalyticsSectionProps) {
                 <div className='rounded-lg bg-zinc-800/50 p-3 transition-all duration-300 group-hover:bg-zinc-800/70'>
                   <div className='text-sm text-gray-400'>CPU Usage</div>
                   <div className='text-2xl font-bold transition-colors duration-300 group-hover:text-blue-400'>
-                    32%
+                    72%
                   </div>
                 </div>
                 <div className='rounded-lg bg-zinc-800/50 p-3 transition-all duration-300 group-hover:bg-zinc-800/70'>
                   <div className='text-sm text-gray-400'>Memory</div>
                   <div className='text-2xl font-bold transition-colors duration-300 group-hover:text-blue-400'>
-                    1.2GB
+                    4.8GB
                   </div>
                 </div>
               </div>
@@ -97,10 +95,10 @@ export function AnalyticsSection({ datacenters }: AnalyticsSectionProps) {
 
           {/* New Analytics Blocks */}
           <div className='grid grid-cols-1 gap-4 sm:gap-8 md:grid-cols-3'>
-            {/* Pie Chart */}
+            {/* Service Distribution */}
             <div className='group flex flex-col items-center rounded-lg border border-zinc-700/60 bg-zinc-900/50 p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(59,130,246,0.1)]'>
               <h3 className='mb-4 text-xl font-semibold transition-colors duration-300 group-hover:text-blue-400'>
-                Task Distribution
+                Service Distribution
               </h3>
               <svg
                 width='120'
@@ -109,7 +107,7 @@ export function AnalyticsSection({ datacenters }: AnalyticsSectionProps) {
                 className='transition-transform duration-300 group-hover:scale-110'
               >
                 <circle r='16' cx='16' cy='16' fill='#222' />
-                {/* Web: 40% */}
+                {/* Web Hosting: 45% */}
                 <circle
                   r='16'
                   cx='16'
@@ -117,10 +115,10 @@ export function AnalyticsSection({ datacenters }: AnalyticsSectionProps) {
                   fill='transparent'
                   stroke='#3b82f6'
                   strokeWidth='8'
-                  strokeDasharray='25.13 14.87'
+                  strokeDasharray='28.27 11.73'
                   strokeDashoffset='0'
                 />
-                {/* Bots: 35% */}
+                {/* VPS: 35% */}
                 <circle
                   r='16'
                   cx='16'
@@ -129,9 +127,9 @@ export function AnalyticsSection({ datacenters }: AnalyticsSectionProps) {
                   stroke='#10b981'
                   strokeWidth='8'
                   strokeDasharray='21.98 78.02'
-                  strokeDashoffset='-25.13'
+                  strokeDashoffset='-28.27'
                 />
-                {/* Analytics: 25% */}
+                {/* Dedicated: 20% */}
                 <circle
                   r='16'
                   cx='16'
@@ -140,21 +138,21 @@ export function AnalyticsSection({ datacenters }: AnalyticsSectionProps) {
                   stroke='#f59e42'
                   strokeWidth='8'
                   strokeDasharray='35.89 84.11'
-                  strokeDashoffset='-47.11'
+                  strokeDashoffset='-50.25'
                 />
               </svg>
               <div className='mt-4 flex justify-center gap-4 text-xs text-gray-400'>
                 <span className='flex items-center transition-colors duration-300 group-hover:text-gray-300'>
                   <span className='mr-1 h-3 w-3 rounded-full bg-blue-500'></span>
-                  Web
+                  Web Hosting
                 </span>
                 <span className='flex items-center transition-colors duration-300 group-hover:text-gray-300'>
                   <span className='mr-1 h-3 w-3 rounded-full bg-green-500'></span>
-                  Bots
+                  VPS
                 </span>
                 <span className='flex items-center transition-colors duration-300 group-hover:text-gray-300'>
                   <span className='mr-1 h-3 w-3 rounded-full bg-orange-400'></span>
-                  Analytics
+                  Dedicated
                 </span>
               </div>
             </div>
@@ -215,39 +213,39 @@ export function AnalyticsSection({ datacenters }: AnalyticsSectionProps) {
               </div>
             </div>
 
-            {/* Numeric Analytics Cards */}
+            {/* System Health */}
             <div className='group flex flex-col gap-4 rounded-lg border border-zinc-700/60 bg-zinc-900/50 p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(59,130,246,0.1)]'>
               <h3 className='mb-4 text-xl font-semibold transition-colors duration-300 group-hover:text-blue-400'>
-                Quick Stats
+                System Health
               </h3>
               <div className='flex flex-col gap-2'>
                 <div className='flex justify-between text-sm text-gray-400 transition-colors duration-300 group-hover:text-gray-300'>
-                  <span>Active Users</span>
-                  <span className='font-bold text-blue-400 transition-colors duration-300 group-hover:text-blue-300'>
-                    1,024
-                  </span>
-                </div>
-                <div className='flex justify-between text-sm text-gray-400 transition-colors duration-300 group-hover:text-gray-300'>
-                  <span>Deploys</span>
+                  <span>Uptime</span>
                   <span className='font-bold text-green-400 transition-colors duration-300 group-hover:text-green-300'>
-                    12
+                    99.99%
                   </span>
                 </div>
                 <div className='flex justify-between text-sm text-gray-400 transition-colors duration-300 group-hover:text-gray-300'>
-                  <span>Errors</span>
-                  <span className='font-bold text-red-400 transition-colors duration-300 group-hover:text-red-300'>
-                    2
+                  <span>Network Status</span>
+                  <span className='font-bold text-green-400 transition-colors duration-300 group-hover:text-green-300'>
+                    Optimal
                   </span>
                 </div>
                 <div className='flex justify-between text-sm text-gray-400 transition-colors duration-300 group-hover:text-gray-300'>
-                  <span>Avg. Response</span>
-                  <span className='font-bold text-yellow-400 transition-colors duration-300 group-hover:text-yellow-300'>
-                    120ms
+                  <span>Security Status</span>
+                  <span className='font-bold text-green-400 transition-colors duration-300 group-hover:text-green-300'>
+                    Protected
+                  </span>
+                </div>
+                <div className='flex justify-between text-sm text-gray-400 transition-colors duration-300 group-hover:text-gray-300'>
+                  <span>Backup Status</span>
+                  <span className='font-bold text-green-400 transition-colors duration-300 group-hover:text-green-300'>
+                    Up to date
                   </span>
                 </div>
               </div>
               <div className='mt-4 text-xs text-gray-500 transition-colors duration-300 group-hover:text-gray-400'>
-                Last update: 2 min ago
+                Last check: 1 min ago
               </div>
             </div>
           </div>

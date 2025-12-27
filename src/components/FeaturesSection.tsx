@@ -6,18 +6,29 @@ export function FeaturesSection() {
   return (
     <section className='relative flex h-auto min-h-[90vh] snap-start items-center justify-center md:h-screen'>
       <div className='relative z-10 container mx-auto px-2 py-8 sm:px-4 sm:py-16'>
-        <RotatingText
-          texts={['Hosting', 'Bots', 'Analytics', 'Security', 'Billing', 'SEO']}
-          mainClassName='px-2 sm:px-2 md:px-3 bg-blue-500 text-white overflow-hidden py-0.5 sm:py-1 md:py-2 justify-center rounded-lg'
-          staggerFrom={'last'}
-          initial={{ y: '100%' }}
-          animate={{ y: 0 }}
-          exit={{ y: '-120%' }}
-          staggerDuration={0.1}
-          splitLevelClassName='overflow-hidden pb-0.5 sm:pb-1 md:pb-1'
-          transition={{ type: 'spring', damping: 30, stiffness: 400 }}
-          rotationInterval={5000}
-        />
+        <div className='mb-12 flex flex-col items-center justify-center space-y-4'>
+          <div className='flex items-center space-x-2 text-blue-500'>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+            </svg>
+            <h2 className='text-xl font-semibold'>Enterprise Infrastructure</h2>
+          </div>
+          <RotatingText
+            texts={['High-Performance Servers', '99.9% Uptime', 'DDoS Protection', '24/7 Monitoring', 'Global CDN', 'Auto Scaling']}
+            mainClassName='px-4 sm:px-6 md:px-8 bg-gradient-to-r from-blue-600 to-blue-500 text-white overflow-hidden py-2 sm:py-3 md:py-4 justify-center rounded-xl shadow-lg'
+            staggerFrom={'last'}
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '-120%' }}
+            staggerDuration={0.1}
+            splitLevelClassName='overflow-hidden pb-0.5 sm:pb-1 md:pb-1'
+            transition={{ type: 'spring', damping: 30, stiffness: 400 }}
+            rotationInterval={4000}
+          />
+          <p className='mt-4 max-w-2xl text-center text-zinc-400'>
+            Enterprise-grade infrastructure with advanced security and performance optimization
+          </p>
+        </div>
         <div className='grid grid-cols-1 gap-4 sm:gap-8 md:grid-cols-3'>
           {/* Feature 1: FullStack Development */}
           <Magnet padding={50} disabled={false} magnetStrength={50}>

@@ -520,22 +520,67 @@ export function PricingSection() {
                     text={`Server: ${plan.serverFeatures.ram}`}
                   />
                 </ul>
-                <StarBorder as='button' color='cyan' speed='5s'>
-                  <ShinyText
-                    text={plan.outOfStock ? 'Out of Stock' : 'Get Started'}
-                    disabled={!plan.outOfStock}
-                    speed={3}
-                  />
-                </StarBorder>
+                <button
+                  disabled={plan.outOfStock}
+                  className={`relative group/btn w-full overflow-hidden rounded-lg px-6 py-3 transition-all duration-300 ${
+                    plan.outOfStock
+                      ? 'cursor-not-allowed bg-zinc-700/50'
+                      : plan.name === 'Premium'
+                      ? 'bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400'
+                      : 'bg-gradient-to-r from-zinc-700 to-zinc-600 hover:from-zinc-600 hover:to-zinc-500'
+                  }`}
+                >
+                  <div className='relative z-10 flex items-center justify-center'>
+                    <span className={`font-semibold ${
+                      plan.outOfStock ? 'text-zinc-500' : 'text-white'
+                    }`}>
+                      {plan.outOfStock ? 'Out of Stock' : 'Get Started'}
+                    </span>
+                    {!plan.outOfStock && (
+                      <svg
+                        className='ml-2 h-5 w-5 transform transition-transform duration-300 group-hover/btn:translate-x-1'
+                        fill='none'
+                        viewBox='0 0 24 24'
+                        stroke='currentColor'
+                      >
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          strokeWidth={2}
+                          d='M13 7l5 5m0 0l-5 5m5-5H6'
+                        />
+                      </svg>
+                    )}
+                  </div>
+                  {!plan.outOfStock && (
+                    <div className='absolute inset-0 -z-10 bg-gradient-to-r from-blue-500/20 to-blue-400/20 opacity-0 transition-opacity duration-300 group-hover/btn:opacity-100' />
+                  )}
+                </button>
               </div>
             ))}
           </div>
           <div className='mt-8 flex justify-center'>
             <button
               onClick={() => setShowMore(true)}
-              className='rounded-lg bg-blue-500/10 px-6 py-2 text-sm font-semibold text-blue-400 transition-all duration-300 hover:bg-blue-500/20 hover:text-blue-300'
+              className='group relative overflow-hidden rounded-lg bg-gradient-to-r from-blue-600/20 to-blue-500/20 px-6 py-2 text-sm font-semibold text-blue-400 transition-all duration-300 hover:from-blue-500/30 hover:to-blue-400/30 hover:text-blue-300'
             >
-              See more
+              <span className='relative z-10 flex items-center'>
+                See more
+                <svg
+                  className='ml-2 h-4 w-4 transform transition-transform duration-300 group-hover:translate-x-1'
+                  fill='none'
+                  viewBox='0 0 24 24'
+                  stroke='currentColor'
+                >
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M13 7l5 5m0 0l-5 5m5-5H6'
+                  />
+                </svg>
+              </span>
+              <div className='absolute inset-0 -z-10 bg-gradient-to-r from-blue-500/10 to-blue-400/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100' />
             </button>
           </div>
         </div>
@@ -617,13 +662,42 @@ export function PricingSection() {
                     text={`Server: ${plan.serverFeatures.ram}`}
                   />
                 </ul>
-                <StarBorder as='button' color='cyan' speed='5s'>
-                  <ShinyText
-                    text={plan.outOfStock ? 'Out of Stock' : 'Get Started'}
-                    disabled={false}
-                    speed={3}
-                  />
-                </StarBorder>
+                <button
+                  disabled={plan.outOfStock}
+                  className={`relative group/btn w-full overflow-hidden rounded-lg px-6 py-3 transition-all duration-300 ${
+                    plan.outOfStock
+                      ? 'cursor-not-allowed bg-zinc-700/50'
+                      : plan.name === 'Premium'
+                      ? 'bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400'
+                      : 'bg-gradient-to-r from-zinc-700 to-zinc-600 hover:from-zinc-600 hover:to-zinc-500'
+                  }`}
+                >
+                  <div className='relative z-10 flex items-center justify-center'>
+                    <span className={`font-semibold ${
+                      plan.outOfStock ? 'text-zinc-500' : 'text-white'
+                    }`}>
+                      {plan.outOfStock ? 'Out of Stock' : 'Get Started'}
+                    </span>
+                    {!plan.outOfStock && (
+                      <svg
+                        className='ml-2 h-5 w-5 transform transition-transform duration-300 group-hover/btn:translate-x-1'
+                        fill='none'
+                        viewBox='0 0 24 24'
+                        stroke='currentColor'
+                      >
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          strokeWidth={2}
+                          d='M13 7l5 5m0 0l-5 5m5-5H6'
+                        />
+                      </svg>
+                    )}
+                  </div>
+                  {!plan.outOfStock && (
+                    <div className='absolute inset-0 -z-10 bg-gradient-to-r from-blue-500/20 to-blue-400/20 opacity-0 transition-opacity duration-300 group-hover/btn:opacity-100' />
+                  )}
+                </button>
               </div>
             ))}
           </div>
