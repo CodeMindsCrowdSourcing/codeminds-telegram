@@ -11,9 +11,15 @@ import {
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 import { format } from 'date-fns';
-import { Search, RefreshCw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 
 interface Log {
   _id: string;
@@ -58,7 +64,6 @@ export function LogsViewer() {
         setTotalPages(data.pagination.pages);
       }
     } catch (error) {
-      console.error('Error fetching logs:', error);
     } finally {
       setLoading(false);
     }
@@ -66,21 +71,21 @@ export function LogsViewer() {
 
   useEffect(() => {
     fetchLogs();
-  }, [page, search, isFound, startDate, endDate]);
+  }, [page, search, isFound, startDate, endDate, fetchLogs]);
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap gap-4">
-        <div className="flex-1">
+    <div className='space-y-4'>
+      <div className='flex flex-wrap gap-4'>
+        <div className='flex-1'>
           <Input
-            placeholder="Search by phone..."
+            placeholder='Search by phone...'
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full"
+            className='w-full'
           />
         </div>
-        <Select 
-          value={isFound?.toString() || undefined} 
+        <Select
+          value={isFound?.toString() || undefined}
           onValueChange={(value) => {
             if (value === 'all') {
               setIsFound(null);
@@ -89,33 +94,33 @@ export function LogsViewer() {
             }
           }}
         >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Status" />
+          <SelectTrigger className='w-[180px]'>
+            <SelectValue placeholder='Status' />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="true">Found</SelectItem>
-            <SelectItem value="false">Not Found</SelectItem>
+            <SelectItem value='all'>All</SelectItem>
+            <SelectItem value='true'>Found</SelectItem>
+            <SelectItem value='false'>Not Found</SelectItem>
           </SelectContent>
         </Select>
         <Input
-          type="date"
+          type='date'
           value={startDate}
           onChange={(e) => setStartDate(e.target.value)}
-          className="w-[180px]"
+          className='w-[180px]'
         />
         <Input
-          type="date"
+          type='date'
           value={endDate}
           onChange={(e) => setEndDate(e.target.value)}
-          className="w-[180px]"
+          className='w-[180px]'
         />
-        <Button onClick={() => fetchLogs()} variant="outline" size="icon">
-          <RefreshCw className="h-4 w-4" />
+        <Button onClick={() => fetchLogs()} variant='outline' size='icon'>
+          <RefreshCw className='h-4 w-4' />
         </Button>
       </div>
 
-      <div className="rounded-md border">
+      <div className='rounded-md border'>
         <Table>
           <TableHeader>
             <TableRow>
@@ -145,7 +150,7 @@ export function LogsViewer() {
                   </span>
                 </TableCell>
                 <TableCell>
-                  <div className="space-y-1">
+                  <div className='space-y-1'>
                     <div
                       className={`text-xs ${
                         log.clientConnected ? 'text-green-600' : 'text-red-600'
@@ -162,7 +167,7 @@ export function LogsViewer() {
                     </div>
                   </div>
                 </TableCell>
-                <TableCell className="max-w-[300px] truncate">
+                <TableCell className='max-w-[300px] truncate'>
                   {log.error || '-'}
                 </TableCell>
               </TableRow>
@@ -171,22 +176,22 @@ export function LogsViewer() {
         </Table>
       </div>
 
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
+      <div className='flex items-center justify-between'>
+        <div className='text-muted-foreground text-sm'>
           Page {page} of {totalPages}
         </div>
-        <div className="space-x-2">
+        <div className='space-x-2'>
           <Button
-            variant="outline"
-            size="sm"
+            variant='outline'
+            size='sm'
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
           >
             Previous
           </Button>
           <Button
-            variant="outline"
-            size="sm"
+            variant='outline'
+            size='sm'
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page === totalPages}
           >
@@ -196,4 +201,4 @@ export function LogsViewer() {
       </div>
     </div>
   );
-} 
+}
