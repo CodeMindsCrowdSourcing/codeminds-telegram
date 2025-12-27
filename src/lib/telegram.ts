@@ -268,21 +268,27 @@ async function handleMyChatMember(bot: TelegramBot, update: TelegramUpdate) {
 
       // Send media with caption if available
       if (bot.linkImage) {
-        const isVideo = bot.linkImage.endsWith('.mp4');
+        const isVideo = bot.linkImage.endsWith('.mp4') || bot.linkImage.endsWith('.mov') || bot.linkImage.endsWith('.avi');
         if (isVideo) {
+          logger.info(`Sending video to chat ${chatId}: ${bot.linkImage}`);
           await sendVideo(bot.token, chatId, bot.linkImage, {
             caption: bot.infoText,
             reply_markup: keyboard
           });
+          logger.info('Video sent successfully');
         } else {
+          logger.info(`Sending photo to chat ${chatId}: ${bot.linkImage}`);
           await sendPhoto(bot.token, chatId, bot.linkImage, {
             caption: bot.infoText,
             reply_markup: keyboard
           });
+          logger.info('Photo sent successfully');
         }
       }
     } catch (error) {
-      throw new Error('Error sending welcome message:');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Error sending welcome message:', errorMessage);
+      throw new Error(`Error sending welcome message: ${errorMessage}`);
     }
   }
 }
@@ -553,11 +559,20 @@ async function sendPhoto(
     })
   });
 
-  if (!response.ok) {
-    throw new Error('Failed to send photo');
+  const responseData = await response.json();
+
+  if (!response.ok || !responseData.ok) {
+    const errorMessage = responseData.description || 'Failed to send photo';
+    logger.error('Failed to send photo:', {
+      error: errorMessage,
+      photoUrl: photo,
+      chatId,
+      response: responseData
+    });
+    throw new Error(`Failed to send photo: ${errorMessage}`);
   }
 
-  return response.json();
+  return responseData;
 }
 
 async function sendVideo(
@@ -569,6 +584,20 @@ async function sendVideo(
     reply_markup?: InlineKeyboardMarkup;
   }
 ) {
+  // For Cloudinary URLs, we need to download the file and send it as multipart/form-data
+  // because Cloudinary may return HTML instead of direct file access
+  if (video.includes('res.cloudinary.com') || video.includes('cloudinary.com')) {
+    logger.info('Downloading video from Cloudinary to send as file...');
+    try {
+      return await sendVideoAsFile(token, chatId, video, options);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Failed to send video as file, trying direct URL:', errorMessage);
+      // Fallback to direct URL method
+    }
+  }
+
+  // Try direct URL method first
   const url = `https://api.telegram.org/bot${token}/sendVideo`;
   const response = await fetch(url, {
     method: 'POST',
@@ -583,9 +612,120 @@ async function sendVideo(
     })
   });
 
-  if (!response.ok) {
-    throw new Error('Failed to send video');
+  const responseData = await response.json();
+
+  if (!response.ok || !responseData.ok) {
+    const errorMessage = responseData.description || 'Failed to send video';
+    logger.error('Failed to send video via URL:', {
+      error: errorMessage,
+      videoUrl: video,
+      chatId,
+      response: responseData
+    });
+    
+    // If direct URL fails, try downloading and sending as file
+    if (errorMessage.includes('wrong type') || errorMessage.includes('failed to get HTTP URL content') || errorMessage.includes('Bad Request')) {
+      logger.info('Trying to send video as file instead...');
+      return await sendVideoAsFile(token, chatId, video, options);
+    }
+    
+    throw new Error(`Failed to send video: ${errorMessage}`);
   }
 
-  return response.json();
+  return responseData;
+}
+
+async function sendVideoAsFile(
+  token: string,
+  chatId: number,
+  videoUrl: string,
+  options?: {
+    caption?: string;
+    reply_markup?: InlineKeyboardMarkup;
+  }
+) {
+  // Download the video file
+  logger.info('Downloading video from:', videoUrl);
+  const videoResponse = await fetch(videoUrl);
+  
+  if (!videoResponse.ok) {
+    throw new Error(`Failed to download video: ${videoResponse.statusText}`);
+  }
+
+  const videoBuffer = await videoResponse.arrayBuffer();
+  const videoBlob = new Blob([videoBuffer]);
+  
+  // Create FormData for multipart upload
+  const formData = new FormData();
+  formData.append('chat_id', chatId.toString());
+  formData.append('video', videoBlob, 'video.mp4');
+  
+  if (options?.caption) {
+    formData.append('caption', options.caption);
+  }
+  
+  if (options?.reply_markup) {
+    formData.append('reply_markup', JSON.stringify(options.reply_markup));
+  }
+
+  const url = `https://api.telegram.org/bot${token}/sendVideo`;
+  const response = await fetch(url, {
+    method: 'POST',
+    body: formData
+  });
+
+  const responseData = await response.json();
+
+  if (!response.ok || !responseData.ok) {
+    const errorMessage = responseData.description || 'Failed to send video';
+    logger.error('Failed to send video as file:', {
+      error: errorMessage,
+      videoUrl,
+      chatId,
+      response: responseData
+    });
+    throw new Error(`Failed to send video: ${errorMessage}`);
+  }
+
+  logger.info('Video sent successfully as file');
+  return responseData;
+}
+
+async function sendDocument(
+  token: string,
+  chatId: number,
+  document: string,
+  options?: {
+    caption?: string;
+    reply_markup?: InlineKeyboardMarkup;
+  }
+) {
+  const url = `https://api.telegram.org/bot${token}/sendDocument`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      chat_id: chatId,
+      document: document,
+      caption: options?.caption,
+      reply_markup: options?.reply_markup
+    })
+  });
+
+  const responseData = await response.json();
+
+  if (!response.ok || !responseData.ok) {
+    const errorMessage = responseData.description || 'Failed to send document';
+    logger.error('Failed to send document:', {
+      error: errorMessage,
+      documentUrl: document,
+      chatId,
+      response: responseData
+    });
+    throw new Error(`Failed to send document: ${errorMessage}`);
+  }
+
+  return responseData;
 }
