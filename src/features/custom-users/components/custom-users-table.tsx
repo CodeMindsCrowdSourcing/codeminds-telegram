@@ -669,7 +669,6 @@ export function CustomUsersTable({
     checked: 0,
     found: 0
   });
-  const [shouldContinueChecking, setShouldContinueChecking] = useState(true);
   const abortControllerRef = useRef<AbortController | null>(null);
   const [waitTimeLeft, setWaitTimeLeft] = useState<number | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -692,7 +691,6 @@ export function CustomUsersTable({
 
         if (response.ok && data.isRunning) {
           setIsChecking(true);
-          setShouldContinueChecking(true);
           setCheckProgress({
             total: data.total,
             checked: data.checked,
@@ -742,7 +740,6 @@ export function CustomUsersTable({
             pollIntervalRef.current = null;
           }
           setIsChecking(false);
-          setShouldContinueChecking(false);
           setCheckProgress({
             total: 0,
             checked: 0,
@@ -764,7 +761,6 @@ export function CustomUsersTable({
           pollIntervalRef.current = null;
         }
         setIsChecking(false);
-        setShouldContinueChecking(false);
         setTimeUntilNextBatch(undefined);
       }
     }, 1000);
@@ -856,10 +852,6 @@ export function CustomUsersTable({
     return parseInt(localStorage.getItem('verificationBatchSize') || '30');
   };
 
-  const getDelayTime = () => {
-    return parseInt(localStorage.getItem('verificationDelayTime') || '180') * 1000;
-  };
-
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -886,7 +878,6 @@ export function CustomUsersTable({
         throw new Error(data.error || 'Failed to start verification');
       }
 
-      setShouldContinueChecking(true);
       setIsChecking(true);
       setCheckProgress({
         total: data.total,
@@ -900,7 +891,6 @@ export function CustomUsersTable({
     } catch (error) {
       toast.error('Error in check process');
       setIsChecking(false);
-      setShouldContinueChecking(false);
     }
   };
 
@@ -925,7 +915,6 @@ export function CustomUsersTable({
         pollIntervalRef.current = null;
       }
 
-      setShouldContinueChecking(false);
       setWaitTimeLeft(null);
       abortControllerRef.current?.abort();
       setIsChecking(false);

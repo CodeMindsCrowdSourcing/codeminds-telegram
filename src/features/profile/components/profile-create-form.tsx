@@ -42,7 +42,6 @@ const ProfileCreateForm: React.FC<ProfileFormType> = ({ initialData }) => {
   const description = initialData
     ? 'Edit a product.'
     : 'To create your resume, we first need some basic information about you.';
-  const [previousStep, setPreviousStep] = useState(0);
   const [currentStep, setCurrentStep] = useState(0);
   const [data, setData] = useState({});
 
@@ -83,6 +82,7 @@ const ProfileCreateForm: React.FC<ProfileFormType> = ({ initialData }) => {
       // Add your API call here
       // await axios.post('/api/profile', data);
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Error submitting form:', error);
     } finally {
       setLoading(false);
@@ -129,14 +129,12 @@ const ProfileCreateForm: React.FC<ProfileFormType> = ({ initialData }) => {
       if (currentStep === steps.length - 2) {
         await form.handleSubmit(processForm)();
       }
-      setPreviousStep(currentStep);
       setCurrentStep((step) => step + 1);
     }
   };
 
   const prev = () => {
     if (currentStep > 0) {
-      setPreviousStep(currentStep);
       setCurrentStep((step) => step - 1);
     }
   };

@@ -23,16 +23,19 @@ let botPolling = new Map<string, Promise<void>>();
 const logger = {
   info: (message: string, ...args: any[]) => {
     if (process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console
       console.info(`[Telegram Bot] ${message}`, ...args);
     }
   },
   error: (message: string, ...args: any[]) => {
     if (process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console
       console.error(`[Telegram Bot] ${message}`, ...args);
     }
   },
   warn: (message: string, ...args: any[]) => {
     if (process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console
       console.warn(`[Telegram Bot] ${message}`, ...args);
     }
   }

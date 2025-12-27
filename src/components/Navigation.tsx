@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import ShinyText from '@/components/style/ShinyText';
 import StarBorder from '@/components/style/StarBorder';
-import Dock from '@/components/style/Dock';
 
 type SectionKey = 'welcome' | 'features' | 'analytics' | 'services' | 'pricing';
 

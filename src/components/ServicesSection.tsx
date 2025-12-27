@@ -12,10 +12,12 @@ export function ServicesSection() {
             <div className='h-2 w-2 rounded-full bg-green-500' />
           </div>
           <div className='mb-4 rounded-lg bg-zinc-900/50 p-2 font-mono text-xs sm:p-3'>
+            {/* eslint-disable-next-line react/jsx-no-comment-textnodes */}
             <div className='text-gray-400'>// Enterprise Infrastructure</div>
             <div className='text-blue-400'>class</div>{' '}
             <span className='text-yellow-400'>DataCenter</span>{' '}
             <span className='text-gray-400'>{'{'}</span>
+            {/* eslint-disable-next-line react/jsx-no-comment-textnodes */}
             <div className='pl-2 text-purple-400'>
               // Tier III, Redundancy, Security
             </div>

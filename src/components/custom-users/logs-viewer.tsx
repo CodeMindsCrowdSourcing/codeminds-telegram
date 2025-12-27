@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   Table,
   TableBody,
@@ -36,7 +36,6 @@ interface Log {
 
 export function LogsViewer() {
   const [logs, setLogs] = useState<Log[]>([]);
-  const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState('');
@@ -44,8 +43,7 @@ export function LogsViewer() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
-  const fetchLogs = async () => {
-    setLoading(true);
+  const fetchLogs = useCallback(async () => {
     try {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -64,14 +62,13 @@ export function LogsViewer() {
         setTotalPages(data.pagination.pages);
       }
     } catch (error) {
-    } finally {
-      setLoading(false);
+      // Error handling - logs are already empty by default
     }
-  };
+  }, [page, search, isFound, startDate, endDate]);
 
   useEffect(() => {
     fetchLogs();
-  }, [page, search, isFound, startDate, endDate, fetchLogs]);
+  }, [fetchLogs]);
 
   return (
     <div className='space-y-4'>
