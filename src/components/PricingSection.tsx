@@ -1,11 +1,4 @@
 import React, { useState } from 'react';
-import ShinyText from '@/components/style/ShinyText';
-import StarBorder from '@/components/style/StarBorder';
-import ProfileCard from '@/components/style/ProfileCardComponent';
-
-interface PricingSectionProps {
-  scrollProgress: number;
-}
 
 interface Feature {
   text: string;

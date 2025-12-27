@@ -250,7 +250,7 @@ export async function POST(request: NextRequest) {
       });
 
       // Start verification process in background
-      startVerificationProcess(userId, user, session, batchSize, delayTime).catch(error => {
+      startVerificationProcess(userId, user, session, batchSize, delayTime).catch((_error) => {
         const currentStatus = activeVerifications.get(userId);
         if (currentStatus?.client?.connected) {
           // eslint-disable-next-line no-console

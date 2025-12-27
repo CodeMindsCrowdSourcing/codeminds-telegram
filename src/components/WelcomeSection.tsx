@@ -11,9 +11,7 @@ import { SignIn, SignUp } from '@clerk/nextjs';
 import { useState } from 'react';
 import SplitText from '@/components/style/SplitText';
 import BlurText from '@/components/style/BlurText';
-import ShinyText from '@/components/style/ShinyText';
 import GlitchText from '@/components/style/GlitchText';
-import StarBorder from '@/components/style/StarBorder';
 
 export function WelcomeSection() {
   const [isOpen, setIsOpen] = useState(false);

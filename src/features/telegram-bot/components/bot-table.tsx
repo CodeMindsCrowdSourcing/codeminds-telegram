@@ -296,10 +296,10 @@ function ActionCell({
     }));
   }
 
-  async function handleSaveAllMessages(groupId: string, messages: any[]) {
+  async function handleSaveAllMessages(groupId: string, _messages: any[]) {
     const edits = editMessages[groupId] || {};
     const patchRequests = Object.entries(edits)
-      .filter(([msgId, changes]) => Object.keys(changes).length > 0)
+      .filter(([, changes]) => Object.keys(changes).length > 0)
       .map(([msgId, changes]) =>
         fetch(`/api/telegram-bot/group/${groupId}/messages/${msgId}`, {
           method: 'PATCH',
